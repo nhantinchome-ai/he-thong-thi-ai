@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { GoogleGenAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cors = require('cors');
 const { User, Attempt } = require('./models');
 
@@ -15,7 +15,7 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.error("=> Loi ket noi MongoDB:", err));
 
 // 2. Cấu hình AI (Sẽ tự động lấy chìa khóa bí mật từ Render khi đưa lên mạng)
-const aiSystem = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const aiSystem = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // 3. Chức năng cốt lõi: Tạo đề thi chống gian lận cho từng học sinh
 app.post('/api/tao-de-thi', async (req, res) => {
