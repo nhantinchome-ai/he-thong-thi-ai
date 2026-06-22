@@ -9,12 +9,11 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Giao diện chống lỗi Cannot GET /
-app.get('/', (req, res) => { res.send("<h2>🚀 Máy chủ Backend V3 (vnEdu Clone) đang hoạt động 100% công suất!</h2>"); });
+app.get('/', (req, res) => { res.send("<h2>🚀 Máy chủ Backend V3.5 (Admin Dashboard Live) đang chạy!</h2>"); });
 
 const MONGODB_URI = "mongodb+srv://nhantinchome_db_user:S6g3Zz7iPUNXNieU@cluster0.gdn7qzm.mongodb.net/he_thong_thi_ai?retryWrites=true&w=majority&appName=Cluster0";
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log("=> Da ket noi MongoDB V3!"))
+  .then(() => console.log("=> Da ket noi MongoDB V3.5!"))
   .catch(err => console.error("=> Loi ket noi:", err));
 
 const aiSystem = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -35,7 +34,7 @@ app.post('/api/dang-ky', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Lỗi máy chủ!" }); }
 });
 
-// 2. ĐĂNG NHẬP (Lấy luôn quyền GVCN và GVBM)
+// 2. ĐĂNG NHẬP
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -49,20 +48,19 @@ app.post('/api/dang-nhap', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Sai mật khẩu!" });
 
-        // Trả về kèm theo Lớp chủ nhiệm và Các lớp giảng dạy (nếu là GV)
         res.status(200).json({ 
             message: "Đăng nhập thành công!", 
             data: { 
                 id: user._id, fullname: user.fullname, role: user.role, 
                 grade: user.grade, studentClass: user.studentClass,
-                homeroomClass: user.homeroomClass || "", // Mới
-                teachingClasses: user.teachingClasses || [] // Mới
+                homeroomClass: user.homeroomClass || "", 
+                teachingClasses: user.teachingClasses || [] 
             }
         });
     } catch (error) { res.status(500).json({ message: "Lỗi máy chủ!" }); }
 });
 
-// 3. ADMIN TẠO TÀI KHOẢN GIÁO VIÊN (Nâng cấp phân quyền lớp)
+// 3. ADMIN TẠO TÀI KHOẢN GIÁO VIÊN
 app.post('/api/tao-giao-vien', async (req, res) => {
     try {
         const { fullname, username, password, homeroomClass, teachingClasses } = req.body;
@@ -72,7 +70,6 @@ app.post('/api/tao-giao-vien', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Chuyển chuỗi "10A,10B" thành mảng ['10A', '10B']
         const arrTeaching = teachingClasses ? teachingClasses.split(',').map(c => c.trim()) : [];
 
         const newTeacher = new User({ 
@@ -85,28 +82,37 @@ app.post('/api/tao-giao-vien', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Lỗi máy chủ!" }); }
 });
 
-// 4. API THỐNG KÊ (Đếm số học sinh trong 1 lớp) - TÍNH NĂNG MỚI
+// 4. API THỐNG KÊ SĨ SỐ LỚP CHỦ NHIỆM
 app.post('/api/thong-ke-lop', async (req, res) => {
     try {
         const { targetClass } = req.body;
         const count = await User.countDocuments({ role: 'student', studentClass: targetClass });
         res.status(200).json({ count: count });
-    } catch (error) { res.status(500).json({ message: "Lỗi đếm số lượng!" }); }
+    } catch (error) { res.status(500).json({ message: "Lỗi!" }); }
 });
 
-// 5. TRỘN ĐỀ BẰNG AI
+// 5. API ĐẶC QUYỀN ADMIN: XEM TOÀN BỘ DANH SÁCH USER (TÍNH NĂNG MỚI)
+app.get('/api/admin/tat-ca-users', async (req, res) => {
+    try {
+        // Lấy hết user nhưng giấu pass đi cho bảo mật dữ liệu
+        const tatCaUsers = await User.find({}, '-password');
+        res.status(200).json({ data: tatCaUsers });
+    } catch (error) { 
+        res.status(500).json({ message: "Lỗi không lấy được danh sách hệ thống!" }); 
+    }
+});
+
+// 6. TRỘN ĐỀ BẰNG AI
 app.post('/api/tao-de-thi', async (req, res) => {
     try {
         const { studentId, weekNumber, topic } = req.body;
         const promptYeuCau = `Hãy đóng vai giáo viên ra đề: "${topic}". Yêu cầu: 20 câu (trắc nghiệm + tự luận). Chống gian lận. Trả về JSON: [{"type": "trắc nghiệm", "questionText": "?", "options": ["A","B","C","D"], "correctAnswer": "A"}, {"type": "tự luận", "questionText": "?"}]`;
-
         const model = aiSystem.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(promptYeuCau);
         const rawText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        
         res.status(200).json({ message: "Thành công!", data: { generatedQuestions: JSON.parse(rawText) } });
     } catch (error) { res.status(500).json({ message: "Lỗi gọi AI!" }); }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`=> May chu V3 dang chay tai cong: ${PORT}`));
+app.listen(PORT, () => console.log(`=> May chu V3.5 dang chay tai cong: ${PORT}`));
