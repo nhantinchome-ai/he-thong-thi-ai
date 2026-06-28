@@ -3,43 +3,24 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// Gọi cấu trúc từ models.js sang
+const { User, Attempt } = require('./models');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ======================================================================
-// 1. TỰ ĐỘNG LẤY CHÌA KHÓA TỪ MÁY CHỦ RENDER (BẢO MẬT 100%)
-// ======================================================================
+// Lấy chìa khóa từ Render
 const MONGODB_URI = process.env.MONGODB_URI; 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
-
-// ======================================================================
-// 2. CẤU TRÚC KHO CHỨA MONGODB (SCHEMA V24)
-// ======================================================================
-const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    fullname: { type: String, required: true },
-    role: { type: String, required: true },
-    
-    grade: { type: String },
-    studentClass: { type: String },
-    
-    teachingSubject: { type: String },
-    homeroomClass: { type: String },
-    teachingClasses: { type: String } 
-});
-
-const User = mongoose.model('User', userSchema);
 
 mongoose.connect(MONGODB_URI)
     .then(() => console.log('✅ Đã cắm chốt thành công vào MongoDB Atlas!'))
     .catch(err => console.error('❌ Kết nối MongoDB thất bại:', err));
 
 // ======================================================================
-// 3. HỆ THỐNG API ĐỊNH DANH 
+// HỆ THỐNG API GIAO TIẾP
 // ======================================================================
-
 app.post('/api/dang-ky', async (req, res) => {
     try {
         const { fullname, username, password, grade, studentClass } = req.body;
@@ -70,11 +51,9 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
         if (username === 'admin' && password === 'admin123') {
             return res.status(200).json({ data: { username: 'admin', fullname: 'Super Admin', role: 'admin' } });
         }
-
         const user = await User.findOne({ username, password });
         if (!user) return res.status(401).json({ message: "Sai mã định danh hoặc mật khẩu!" });
         res.status(200).json({ data: user });
@@ -96,7 +75,7 @@ app.post('/api/admin/xoa-user', async (req, res) => {
 });
 
 // ======================================================================
-// 4. LÕI AI GEMINI: TRÍCH XUẤT HỌC LIỆU & CHẾ TÁC ĐỀ THI 2025
+// LÕI AI GEMINI TẠO ĐỀ
 // ======================================================================
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
@@ -131,5 +110,5 @@ Tạo tổng cộng 5 câu hỏi trộn lẫn các dạng trên. CHỈ TRẢ V�
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`🚀 Bộ não Backend V24 đang chạy ở cổng ${PORT}`);
+    console.log(`🚀 Máy chủ Backend đang chạy mượt mà ở cổng ${PORT}`);
 });
