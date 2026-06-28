@@ -2,9 +2,9 @@
   "name": "web-ai-on-tap",
   "version": "2.0.0",
   "description": "Hệ thống tạo đề AI thông minh chống gian lận",
-  "main": "sever.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node sever.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.2",
