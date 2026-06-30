@@ -10,7 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Lấy chìa khóa từ Render
 const MONGODB_URI = process.env.MONGODB_URI; 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 
@@ -19,7 +18,7 @@ mongoose.connect(MONGODB_URI)
     .catch(err => console.error('❌ Kết nối MongoDB thất bại:', err));
 
 // ======================================================================
-// HỆ THỐNG API GIAO TIẾP
+// HỆ THỐNG API GIAO TIẾP (GIỮ NGUYÊN)
 // ======================================================================
 app.post('/api/dang-ky', async (req, res) => {
     try {
@@ -75,24 +74,31 @@ app.post('/api/admin/xoa-user', async (req, res) => {
 });
 
 // ======================================================================
-// LÕI AI GEMINI TẠO ĐỀ
+// LÕI AI GEMINI (ĐÃ THÊM TÍNH NĂNG NHẬN DIỆN "TỐT NGHIỆP")
 // ======================================================================
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 app.post('/api/tao-de-thi', async (req, res) => {
     try {
-        const { documentText } = req.body;
+        const { documentText, isTN } = req.body; // Bắt tín hiệu từ nút Tick
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const prompt = `Dựa vào nội dung học liệu sau, hãy đóng vai là một giáo viên chuyên môn và tạo ra một ma trận bài kiểm tra theo cấu trúc đề thi THPT Quốc gia 2025.
+        // Phân luồng điều hướng AI
+        let formatInstruction = isTN 
+            ? `bao gồm 3 dạng câu hỏi sau:
+               1. "nhiều lựa chọn": questionText, mảng options (4 đáp án), correctAnswer (A, B, C hoặc D).
+               2. "đúng sai": questionText, mảng subOptions (4 ý a,b,c,d), mảng correctAnswers (chứa 4 chữ "D" hoặc "S").
+               3. "trả lời ngắn": questionText, correctAnswer (1 từ hoặc 1 số ngắn gọn).
+               Tạo tổng cộng 6 câu hỏi trộn lẫn các dạng trên.`
+            : `chỉ bao gồm DUY NHẤT 1 dạng câu hỏi:
+               1. "nhiều lựa chọn": questionText, mảng options (4 đáp án), correctAnswer (A, B, C hoặc D).
+               Tạo tổng cộng 5 câu hỏi trắc nghiệm. Tuyệt đối KHÔNG tạo dạng đúng/sai hay trả lời ngắn.`;
+
+        const prompt = `Dựa vào nội dung học liệu sau, hãy đóng vai là một giáo viên chuyên môn và tạo ra một ma trận bài kiểm tra.
 Học liệu: "${documentText}"
 
-Yêu cầu xuất ra MỘT MẢNG JSON HỢP LỆ (Tuyệt đối không bọc trong markdown \`\`\`json), bao gồm 3 dạng câu hỏi sau:
-1. "nhiều lựa chọn": questionText, mảng options (4 đáp án), correctAnswer (A, B, C hoặc D).
-2. "đúng sai": questionText, mảng subOptions (4 ý a,b,c,d), mảng correctAnswers (chứa 4 chữ "D" hoặc "S").
-3. "trả lời ngắn": questionText, correctAnswer (1 từ hoặc 1 số ngắn gọn).
-
-Tạo tổng cộng 5 câu hỏi trộn lẫn các dạng trên. CHỈ TRẢ VỀ JSON, KHÔNG CÓ BẤT KỲ VĂN BẢN NÀO KHÁC.`;
+Yêu cầu xuất ra MỘT MẢNG JSON HỢP LỆ (Tuyệt đối không bọc trong markdown \`\`\`json), ${formatInstruction}
+CHỈ TRẢ VỀ JSON, KHÔNG CÓ BẤT KỲ VĂN BẢN NÀO KHÁC.`;
 
         const result = await model.generateContent(prompt);
         let rawText = result.response.text().trim();
