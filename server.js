@@ -1,3 +1,9 @@
+/**
+ * SYSTEM BACKEND: NỀN TẢNG KHẢO THÍ SỐ TÍCH HỢP AI
+ * Phiên bản: Chuẩn chỉnh (Final)
+ * Tính năng: Chống nghẽn file 100MB, full cấu trúc Lớp/Môn, thuật toán ép chuẩn JSON.
+ */
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,6 +15,7 @@ const app = express();
 // 1. CẤU HÌNH CƠ SỞ HẠ TẦNG & MỞ RỘNG BĂNG THÔNG LÊN 100MB
 // ======================================================================
 app.use(cors());
+// Mở rộng cổ chai dữ liệu để nhận file PDF, Word nặng
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
@@ -16,7 +23,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!MONGODB_URI || !GEMINI_API_KEY) {
-    console.error("❌ LỖI NGHIÊM TRỌNG: Thiếu MONGODB_URI hoặc GEMINI_API_KEY trong cấu hình hệ thống!");
+    console.error("❌ LỖI NGHIÊM TRỌNG: Thiếu biến môi trường MONGODB_URI hoặc GEMINI_API_KEY!");
 }
 
 mongoose.connect(MONGODB_URI)
@@ -35,7 +42,8 @@ const userSchema = new mongoose.Schema({
     studentClass: { type: String, default: "" },
     homeroomClass: { type: String, default: "" },
     teachingSubject: { type: String, default: "" },
-    teachingClasses: { type: String, default: "" } // <-- Đã fix lỗi mất dữ liệu lớp
+    // teachingClasses là trường sống còn để Giáo viên thấy được Lớp lúc ra đề
+    teachingClasses: { type: String, default: "" } 
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
@@ -45,7 +53,7 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 // 3. API TÀI KHOẢN VÀ QUẢN TRỊ
 // ======================================================================
 
-// Đăng ký học sinh
+// [API] Đăng ký học sinh
 app.post('/api/dang-ky', async (req, res) => {
     try {
         const { fullname, username, password, grade, studentClass } = req.body;
@@ -67,7 +75,7 @@ app.post('/api/dang-ky', async (req, res) => {
     }
 });
 
-// Cấp tài khoản giáo viên (Từ Admin)
+// [API] Cấp tài khoản giáo viên (Từ Admin)
 app.post('/api/tao-giao-vien', async (req, res) => {
     try {
         const { fullname, username, password, homeroomClass, teachingSubject, teachingClasses } = req.body;
@@ -90,14 +98,14 @@ app.post('/api/tao-giao-vien', async (req, res) => {
     }
 });
 
-// Đăng nhập hệ thống
+// [API] Đăng nhập hệ thống
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
         const cleanUsr = username.trim();
         const cleanPwd = password.trim();
 
-        // Tài khoản Admin cứng
+        // Tài khoản Admin cứng để bypass Database
         if (cleanUsr === 'admin' && cleanPwd === 'admin123') {
             return res.status(200).json({
                 data: { username: 'admin', fullname: 'Super Administrator', role: 'admin' }
@@ -113,7 +121,7 @@ app.post('/api/dang-nhap', async (req, res) => {
     }
 });
 
-// Lấy danh sách toàn bộ Users cho Admin
+// [API] Lấy danh sách toàn bộ Users cho sơ đồ tổ chức Admin
 app.get('/api/admin/tat-ca-users', async (req, res) => {
     try {
         const users = await User.find({}, '-password -__v');
@@ -123,7 +131,7 @@ app.get('/api/admin/tat-ca-users', async (req, res) => {
     }
 });
 
-// Xóa User
+// [API] Xóa User
 app.post('/api/admin/xoa-user', async (req, res) => {
     try {
         const { userId } = req.body;
@@ -135,14 +143,15 @@ app.post('/api/admin/xoa-user', async (req, res) => {
 });
 
 // ======================================================================
-// 4. LÕI AI ĐỌC DỮ LIỆU & TẠO ĐỀ THI
+// 4. LÕI AI ENGINE: ĐỌC DỮ LIỆU & TẠO ĐỀ THI BẰNG GEMINI
 // ======================================================================
 app.post('/api/tao-de-thi', async (req, res) => {
     try {
         const { documentText, fileBase64, fileMimeType, isTN } = req.body;
+        // Gọi thẳng model flash để tối ưu tốc độ phản hồi
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Cấu hình linh hoạt theo lựa chọn Tốt Nghiệp 2025
+        // Phân nhánh logic dựa trên việc người dùng có tick chọn cấu trúc Tốt Nghiệp 2025 hay không
         let formatInstruction = isTN 
             ? `Bao gồm 3 định dạng sau:
                1. "nhiều lựa chọn": questionText (câu hỏi), options (mảng đúng 4 đáp án), correctAnswer (ký tự A, B, C, D).
@@ -156,36 +165,43 @@ app.post('/api/tao-de-thi', async (req, res) => {
         const prompt = `Đọc nội dung tài liệu và tạo đề kiểm tra trả về định dạng mảng JSON (Array of Objects).
 YÊU CẦU TỐI THƯỢNG:
 - Trả về DUY NHẤT chuỗi mảng JSON hợp lệ để máy tính có thể parse trực tiếp.
-- Tuyệt đối không dùng markdown như \`\`\`json để bọc khối mã.
-- Cấu trúc: ${formatInstruction}`;
+- Tuyệt đối không dùng markdown như \`\`\`json để bọc khối mã. Không in ra bất kỳ chữ nào ngoài mảng JSON.
+- Cấu trúc bắt buộc: ${formatInstruction}`;
 
         let promptParts = [prompt];
+        
+        // Nhồi file Base64 (nếu có)
         if (fileBase64 && fileMimeType) {
             promptParts.push({ inlineData: { data: fileBase64, mimeType: fileMimeType } });
         }
+        
+        // Nhồi văn bản đã trích xuất từ Word/TXT (nếu có)
         if (documentText && documentText.trim().length > 0) {
             promptParts.push(`\n--- NỘI DUNG TÀI LIỆU ---\n${documentText}`);
         }
 
+        // Kích hoạt AI
         const result = await model.generateContent(promptParts);
         let rawText = result.response.text().trim();
 
-        // Thuật toán dọn dẹp ký tự thừa do AI sinh ra
+        // Thuật toán "tẩy rửa": Xóa rác markdown (```json và ```) nếu AI lỡ tay sinh ra
         if (rawText.startsWith('```json')) {
             rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
         } else if (rawText.startsWith('```')) {
             rawText = rawText.replace(/```/g, '').trim();
         }
 
+        // Bọc lỗi parse JSON để tránh sập app nếu AI trả về chuỗi hỏng
         const questionsArray = JSON.parse(rawText);
         res.status(200).json({ data: questionsArray });
+        
     } catch (error) {
         console.error("Lỗi tạo đề thi bằng AI:", error);
-        res.status(500).json({ message: "Lỗi AI xử lý hoặc file bị sai cấu trúc!" });
+        res.status(500).json({ message: "Lỗi AI xử lý hoặc file bị sai cấu trúc. Vui lòng thử lại!" });
     }
 });
 
-// Khởi chạy server
+// Khởi chạy server tại cổng mặc định của Render (10000)
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`🚀 SERVER ĐÃ SẴN SÀNG CHẠY TẠI CỔNG: ${PORT}`);
