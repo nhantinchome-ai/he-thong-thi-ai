@@ -37,13 +37,7 @@
         input, select, textarea { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: 'Inter', sans-serif; background: #f8fafc; transition: all 0.2s; color: var(--secondary); }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
         
-        /* FIX LỖI ẨN DROPDOWN GIAO LỚP */
-        #tClass {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            height: auto !important;
-        }
+        #tClass { display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important; }
 
         .pwd-box { position: relative; } .pwd-box input { padding-right: 45px; }
         .btn-eye { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted); transition: 0.2s; }
@@ -79,7 +73,6 @@
         th { background: var(--bg-light); color: var(--text-muted); padding: 14px 16px; font-weight: 600; text-align: left; font-size: 12px; border-bottom: 1px solid var(--border); }
         td { padding: 14px 16px; background: white; border-bottom: 1px solid var(--border); color: var(--secondary); font-weight: 500; }
 
-        /* VÙNG KÉO THẢ (DRAG & DROP) XỊN XÒ */
         .drop-zone { border: 2px dashed #94a3b8; border-radius: 12px; padding: 40px 20px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s ease; margin-bottom: 15px; }
         .drop-zone.dragover { border-color: var(--primary); background: #e0e7ff; transform: scale(1.01); }
         .drop-zone i { font-size: 48px; color: #cbd5e1; margin-bottom: 15px; transition: 0.2s; }
@@ -93,7 +86,6 @@
         .file-details h4 { margin: 0; font-size: 14px; color: var(--secondary); word-break: break-all; }
         .file-details span { font-size: 12px; color: var(--text-muted); }
 
-        /* GAME UI CHO HỌC SINH */
         .student-bg { background-color: #e0f2fe; }
         .game-btn { background: #3b82f6; color: white; font-weight: 800; font-size: 15px; border: none; border-radius: 12px; padding: 14px 24px; box-shadow: 0 5px 0 #2563eb; cursor: pointer; transition: 0.1s; display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
         .game-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #2563eb; }
@@ -177,7 +169,23 @@
                     <div class="form-group"><label>Họ tên GV:</label><input type="text" id="aName"></div>
                     <div class="form-group"><label>Mã (User):</label><input type="text" id="aUsr"></div>
                     <div class="form-group"><label>Mật khẩu:</label><div class="pwd-box"><input type="password" id="aPwd"><i class="fa-solid fa-eye btn-eye" onclick="togglePwd('aPwd', this)"></i></div></div>
-                    <div class="form-group"><label>Chuyên môn:</label><select id="aSubj"><option value="Toán Học">Toán Học</option><option value="Ngữ Văn">Ngữ Văn</option><option value="Tiếng Anh">Tiếng Anh</option><option value="Vật Lý">Vật Lý</option><option value="Hóa Học">Hóa Học</option><option value="Tin Học">Tin Học</option><option value="Công Nghệ">Công Nghệ</option></select></div>
+                    <div class="form-group"><label>Chuyên môn:</label>
+                        <select id="aSubj">
+                            <option value="Toán Học">Toán Học</option>
+                            <option value="Ngữ Văn">Ngữ Văn</option>
+                            <option value="Tiếng Anh">Tiếng Anh</option>
+                            <option value="Vật Lý">Vật Lý</option>
+                            <option value="Hóa Học">Hóa Học</option>
+                            <option value="Sinh Học">Sinh Học</option>
+                            <option value="Lịch Sử">Lịch Sử</option>
+                            <option value="Địa Lý">Địa Lý</option>
+                            <option value="Tin Học">Tin Học</option>
+                            <option value="Công Nghệ">Công Nghệ</option>
+                            <option value="GDCD / GDKT&PL">GDCD / GDKT&PL</option>
+                            <option value="Thể Dục">Thể Dục</option>
+                            <option value="GD Quốc Phòng">GD Quốc Phòng</option>
+                        </select>
+                    </div>
                     <div class="form-group"><label>Chủ nhiệm:</label><select id="aHr"><option value="">-- Không --</option></select></div>
                     <div class="form-group"><label>Lớp dạy:</label><div id="aGrid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:120px; overflow-y:auto; background:white; padding:10px; border:1px solid #cbd5e1; border-radius:6px;"></div></div>
                     <button class="btn-full" onclick="doAddTea()"><i class="fa-solid fa-check"></i> LƯU HỒ SƠ</button>
@@ -277,13 +285,11 @@
 </div>
 
 <script>
-    // Đã thay thế link Backend sang máy chủ xịn Railway của sếp
     const API = "https://he-thong-thi-ai-production.up.railway.app";
     
     const $ = id => document.getElementById(id);
     let session = null; let drafts = []; let allUsersCache = []; let currentExamLen = 0; 
     
-    // TRÌNH QUẢN LÝ FILE
     let currentFileBase64 = null;
     let currentMimeType = null;
     let currentExtractedText = "";
@@ -338,10 +344,11 @@
         setTimeout(() => el.remove(), type==='loading'? 8000 : 4000); 
     };
 
+    // FIX LỖI NHẢY LUNG TUNG BẰNG FLEXBOX
     const initCls = () => { 
         PREDEFINED_CLASSES.forEach(c => { 
             $('aHr').innerHTML += `<option value="${c}">${c}</option>`; 
-            $('aGrid').innerHTML += `<label style="font-size:14px;"><input type="checkbox" value="${c}" class="aCb"> ${c}</label>`; 
+            $('aGrid').innerHTML += `<label style="font-size:14px; display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:0;"><input type="checkbox" value="${c}" class="aCb" style="width:16px !important; height:16px !important; margin:0; flex-shrink:0;"> ${c}</label>`; 
         }); 
     };
 
@@ -369,9 +376,6 @@
         letters.forEach(l => $('rCls').innerHTML += `<option value="${g}${l}">${g}${l}</option>`); 
     };
 
-    // ==============================================================
-    // THUẬT TOÁN KÉO THẢ FILE SIÊU MƯỢT (DRAG & DROP ZONE)
-    // ==============================================================
     const dropZone = $('dropZone');
     const fileInput = $('tFile');
 
@@ -633,7 +637,6 @@
         } 
     };
 
-    // BẢN VÁ LỖI CHO GIÁO VIÊN: Ép đổ dữ liệu chuẩn xác vào Dropdown
     const setupTea = () => { 
         $('tLockSubj').innerText = session.teachingSubject || "N/A"; 
         
@@ -678,7 +681,6 @@
         } 
     };
 
-    // BỘ MÁY ĐẨY DATA LÊN AI
     const reqAI = async () => { 
         if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
         if (!currentFileBase64 && !currentExtractedText) return toast("Sếp ơi, kéo thả tài liệu vào hộp trước đã!", "warn");
