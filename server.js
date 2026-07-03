@@ -134,7 +134,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             fileMimeType = req.file.mimetype;
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
         const prompt = `Bạn là chuyên gia giáo dục xuất sắc. Hãy đọc tài liệu đính kèm hoặc nội dung sau đây và tạo một bộ câu hỏi trắc nghiệm (gồm 5 câu). 
         Cấu trúc Tốt nghiệp THPT 2025: ${isTN ? 'CÓ (Ưu tiên format câu hỏi nhiều lựa chọn và đúng/sai)' : 'KHÔNG'}.
