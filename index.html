@@ -229,13 +229,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Nạp học liệu gốc (Chấp nhận PDF, Word, PowerPoint dạng kéo thả):</label>
+                    <label>Nạp học liệu gốc (Chấp nhận Ảnh, PDF, Word, PowerPoint dạng kéo thả):</label>
                     
                     <div id="dropZone" class="drop-zone">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                         <p>Kéo thả File hoặc Thư mục vào đây để tải lên</p>
                         <small>Hoặc click vào khung này để duyệt file từ máy tính</small>
-                        <input type="file" id="tFile" accept=".pdf, .docx, .txt, .jpg, .png" multiple hidden>
+                        <input type="file" id="tFile" accept=".pdf, .docx, .txt, .jpg, .jpeg, .png" multiple hidden>
                     </div>
 
                     <div id="fileInfo" class="file-info-box">
@@ -403,6 +403,7 @@
         currentExtractedText = "";
     };
 
+    // ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ NHẬN ẢNH TỪ A ĐẾN Z
     const processSelectedFile = (file) => {
         if(!file) return; 
         const ext = file.name.split('.').pop().toLowerCase();
@@ -416,6 +417,8 @@
         if(ext === 'pdf') { iconClass = "fa-solid fa-file-pdf"; iconColor = "#ef4444"; }
         else if(ext === 'docx') { iconClass = "fa-solid fa-file-word"; iconColor = "#3b82f6"; }
         else if(ext === 'pptx') { iconClass = "fa-solid fa-file-powerpoint"; iconColor = "#ea580c"; }
+        // Thêm icon màu xanh lá cực ngầu cho file ảnh
+        else if(['jpg', 'jpeg', 'png'].includes(ext)) { iconClass = "fa-solid fa-file-image"; iconColor = "#10b981"; }
         
         $('fileIcon').className = `${iconClass} file-icon`;
         $('fileIcon').style.color = iconColor;
@@ -453,8 +456,18 @@
             };
             r.readAsDataURL(file);
         }
+        // AI DỊCH ẢNH (Phá vỡ mọi giới hạn của file PDF)
+        else if (['jpg', 'jpeg', 'png'].includes(ext)) {
+            const r = new FileReader();
+            r.onload = (e) => {
+                currentFileBase64 = e.target.result.split(',')[1];
+                currentMimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+                toast("Đã nạp ảnh thành công, AI sẵn sàng quét!", "success");
+            };
+            r.readAsDataURL(file);
+        }
         else { 
-            toast("Hệ thống chỉ nhận PDF, Word, PowerPoint, TXT!", "error"); 
+            toast("Hệ thống chỉ nhận Ảnh (JPG/PNG), PDF, Word, PowerPoint, TXT!", "error"); 
             resetUploader();
         } 
     };
