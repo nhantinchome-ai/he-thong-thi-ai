@@ -344,7 +344,6 @@
         setTimeout(() => el.remove(), type==='loading'? 8000 : 4000); 
     };
 
-    // FIX LỖI NHẢY LUNG TUNG BẰNG FLEXBOX
     const initCls = () => { 
         PREDEFINED_CLASSES.forEach(c => { 
             $('aHr').innerHTML += `<option value="${c}">${c}</option>`; 
@@ -387,11 +386,11 @@
         dropZone.classList.remove('dragover');
         if(e.dataTransfer.files.length > 0) {
             fileInput.files = e.dataTransfer.files;
-            processSelectedFile(fileInput.files[0]);
+            processSelectedFiles(fileInput.files);
         }
     };
     fileInput.onchange = (e) => {
-        if(e.target.files.length > 0) processSelectedFile(e.target.files[0]);
+        if(e.target.files.length > 0) processSelectedFiles(e.target.files);
     };
 
     const resetUploader = () => {
@@ -403,71 +402,109 @@
         currentExtractedText = "";
     };
 
-    // ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ NHẬN ẢNH TỪ A ĐẾN Z
-    const processSelectedFile = (file) => {
-        if(!file) return; 
-        const ext = file.name.split('.').pop().toLowerCase();
+    // BẢN NÂNG CẤP: GOM MƯỜI MẤY TẤM ẢNH THÀNH 1 CUỘN DÀI
+    const processSelectedFiles = async (fileList) => {
+        const files = Array.from(fileList);
+        if(files.length === 0) return; 
+        
+        const ext = files[0].name.split('.').pop().toLowerCase();
         
         $('dropZone').style.display = 'none';
         $('fileInfo').style.display = 'flex';
-        $('fileName').innerText = file.name;
-        $('fileSize').innerText = (file.size / 1024 / 1024).toFixed(2) + " MB";
+        $('fileName').innerText = files.length > 1 ? `Đã nạp ${files.length} tệp tin (Đang chuẩn bị...)` : files[0].name;
+        
+        let totalSize = files.reduce((acc, f) => acc + f.size, 0);
+        $('fileSize').innerText = (totalSize / 1024 / 1024).toFixed(2) + " MB" + (files.length > 1 ? " (Đang xử lý...)" : "");
         
         let iconClass = "fa-solid fa-file-lines"; let iconColor = "#94a3b8";
         if(ext === 'pdf') { iconClass = "fa-solid fa-file-pdf"; iconColor = "#ef4444"; }
         else if(ext === 'docx') { iconClass = "fa-solid fa-file-word"; iconColor = "#3b82f6"; }
         else if(ext === 'pptx') { iconClass = "fa-solid fa-file-powerpoint"; iconColor = "#ea580c"; }
-        // Thêm icon màu xanh lá cực ngầu cho file ảnh
-        else if(['jpg', 'jpeg', 'png'].includes(ext)) { iconClass = "fa-solid fa-file-image"; iconColor = "#10b981"; }
+        else if(['jpg', 'jpeg', 'png'].includes(ext)) { iconClass = "fa-solid fa-images"; iconColor = "#10b981"; }
         
         $('fileIcon').className = `${iconClass} file-icon`;
         $('fileIcon').style.color = iconColor;
 
         if(ext === 'txt') { 
             const reader = new FileReader(); 
-            reader.onload = (e) => { currentExtractedText = e.target.result; toast("Nạp dữ liệu chữ thành công!", "success"); }; 
-            reader.readAsText(file); 
-        } 
-        else if (ext === 'pdf') { 
-            const r = new FileReader();
-            r.onload = (e) => {
-                currentFileBase64 = e.target.result.split(',')[1];
-                currentMimeType = "application/pdf";
-                toast("Đã kích hoạt Mắt Thần cho PDF!", "success");
-            };
-            r.readAsDataURL(file);
+            reader.onload = (e) => { currentExtractedText = e.target.result; $('fileSize').innerText="Xong!"; toast("Nạp chữ thành công!", "success"); }; 
+            reader.readAsText(files[0]); 
         } 
         else if (ext === 'docx') { 
             const r = new FileReader(); 
             r.onload = function(event) { 
                 mammoth.extractRawText({arrayBuffer: event.target.result}).then(function(resultText) {
                     currentExtractedText = resultText.value;
+                    $('fileSize').innerText="Xong!";
                     toast("Bóc tách chữ từ Word hoàn tất!", "success"); 
                 }).catch(err => toast("Lỗi định dạng Word!", "error")); 
             }; 
-            r.readAsArrayBuffer(file); 
+            r.readAsArrayBuffer(files[0]); 
         } 
+        else if (ext === 'pdf') { 
+            const r = new FileReader();
+            r.onload = (e) => {
+                currentFileBase64 = e.target.result.split(',')[1];
+                currentMimeType = "application/pdf";
+                $('fileSize').innerText="Xong!";
+                toast("Đã kích hoạt Mắt Thần cho PDF!", "success");
+            };
+            r.readAsDataURL(files[0]);
+        }
         else if (ext === 'pptx') { 
             const r = new FileReader();
             r.onload = (e) => {
                 currentFileBase64 = e.target.result.split(',')[1];
                 currentMimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-                toast("Đã chuyển mã slide PowerPoint sang AI!", "success");
+                $('fileSize').innerText="Xong!";
+                toast("Đã nạp slide PowerPoint!", "success");
             };
-            r.readAsDataURL(file);
+            r.readAsDataURL(files[0]);
         }
-        // AI DỊCH ẢNH (Phá vỡ mọi giới hạn của file PDF)
+        // TUYỆT KỸ: Ghép nhiều ảnh lại với nhau (Giấu server)
         else if (['jpg', 'jpeg', 'png'].includes(ext)) {
-            const r = new FileReader();
-            r.onload = (e) => {
-                currentFileBase64 = e.target.result.split(',')[1];
-                currentMimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-                toast("Đã nạp ảnh thành công, AI sẵn sàng quét!", "success");
-            };
-            r.readAsDataURL(file);
+            toast(`Đang may ${files.length} ảnh lại thành 1 cuộn dài...`, "loading");
+            try {
+                const images = await Promise.all(files.map(f => {
+                    return new Promise(resolve => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.src = URL.createObjectURL(f);
+                    });
+                }));
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                let width = 0; let height = 0;
+                images.forEach(img => {
+                    width = Math.max(width, img.width);
+                    height += img.height;
+                });
+                
+                canvas.width = width; canvas.height = height;
+                ctx.fillStyle = "white"; ctx.fillRect(0, 0, width, height);
+
+                let y = 0;
+                images.forEach(img => {
+                    const x = (width - img.width) / 2; 
+                    ctx.drawImage(img, x, y);
+                    y += img.height;
+                });
+                
+                const combinedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                currentFileBase64 = combinedDataUrl.split(',')[1];
+                currentMimeType = "image/jpeg";
+                
+                $('fileSize').innerText = "Đã nối ảnh xong!";
+                $('fileName').innerText = `Đã gộp ${files.length} ảnh thành 1`;
+                toast(`Đã gộp thành công ${files.length} trang, quất AI thôi sếp!`, "success");
+            } catch (err) {
+                toast("Lỗi khi nối ảnh: " + err.message, "error");
+            }
         }
         else { 
-            toast("Hệ thống chỉ nhận Ảnh (JPG/PNG), PDF, Word, PowerPoint, TXT!", "error"); 
+            toast("Hệ thống chỉ nhận Ảnh, PDF, Word, PowerPoint, TXT!", "error"); 
             resetUploader();
         } 
     };
