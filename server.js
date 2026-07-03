@@ -9,8 +9,8 @@ const app = express();
 
 // Bật CORS để cho phép web từ Cloudflare gọi vào Railway
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Cài đặt Multer: Dùng RAM làm bộ đệm để nhận file thô siêu tốc (Tối đa 15MB)
 const upload = multer({ 
