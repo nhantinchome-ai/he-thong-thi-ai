@@ -9,13 +9,15 @@ const app = express();
 
 // Bật CORS để cho phép web từ Cloudflare gọi vào Railway
 app.use(cors());
+
+// CHÌA KHÓA PHÁ LỖI 413: Nới lỏng cổng thành lên 50MB (Mặc định nó khóa ở mức 100KB)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Cài đặt Multer: Dùng RAM làm bộ đệm để nhận file thô siêu tốc (Tối đa 15MB)
+// Cài đặt Multer: Dùng RAM làm bộ đệm để nhận file thô siêu tốc (Tối đa 50MB)
 const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 15 * 1024 * 1024 } 
+    limits: { fileSize: 50 * 1024 * 1024 } 
 });
 
 // Khởi tạo Gemini AI
@@ -29,7 +31,7 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(err => console.error("❌ Lỗi kết nối MongoDB:", err));
 
 // ==========================================
-// 2. TẠO CẤU TRÚC LƯU TRỮ (MODEL) - Gom chung vào đây cho lười
+// 2. TẠO CẤU TRÚC LƯU TRỮ (MODEL)
 // ==========================================
 const userSchema = new mongoose.Schema({
     fullname: { type: String, required: true },
@@ -120,13 +122,13 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
-        const isTN = req.body.isTN === 'true'; 
+        const isTN = req.body.isTN === 'true' || req.body.isTN === true; 
         const documentText = req.body.documentText;
         
-        let fileBase64 = null;
-        let fileMimeType = null;
+        let fileBase64 = req.body.fileBase64; // Nhận Base64 từ web cũ nếu có
+        let fileMimeType = req.body.fileMimeType;
 
-        // Bắt file thô từ web và dịch sang ngôn ngữ của AI
+        // Nếu web gửi file thô (FormData mới), Backend tự chuyển sang Base64 cho AI
         if (req.file) {
             fileBase64 = req.file.buffer.toString('base64');
             fileMimeType = req.file.mimetype;
@@ -167,7 +169,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
     } catch (error) {
         console.error("❌ Lỗi AI:", error);
-        res.status(500).json({ message: "File quá lạ hoặc máy chủ AI đang quá tải, sếp thử lại nhé!" });
+        res.status(500).json({ message: "Máy chủ AI đang xử lý quá tải dung lượng file, sếp thử lại nhé!" });
     }
 });
 
