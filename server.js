@@ -20,7 +20,7 @@ const upload = multer({
     limits: { fileSize: 50 * 1024 * 1024 } 
 });
 
-// Khởi tạo Gemini AI
+// Khởi tạo Gemini AI (Dùng key từ biến môi trường)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ==========================================
@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // ==========================================
-// 3. CÁC API XỬ LÝ DỮ LIỆU
+// 3. CÁC API QUẢN LÝ USER
 // ==========================================
 
 // Đăng ký học sinh
@@ -65,7 +65,7 @@ app.post('/api/dang-ky', async (req, res) => {
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
-        // Mẹo nhỏ: Tự động tạo Admin nếu chưa có
+        // Tự động tạo Admin
         if (username === 'admin' && password === 'admin') {
             let adminUser = await User.findOne({ username: 'admin' });
             if (!adminUser) {
@@ -86,7 +86,7 @@ app.post('/api/dang-nhap', async (req, res) => {
     }
 });
 
-// Admin: Lấy toàn bộ người dùng
+// Lấy tất cả user (Admin)
 app.get('/api/admin/tat-ca-users', async (req, res) => {
     try {
         const users = await User.find({});
@@ -96,7 +96,7 @@ app.get('/api/admin/tat-ca-users', async (req, res) => {
     }
 });
 
-// Admin: Xóa user
+// Xóa user (Admin)
 app.post('/api/admin/xoa-user', async (req, res) => {
     try {
         await User.findByIdAndDelete(req.body.userId);
@@ -106,7 +106,7 @@ app.post('/api/admin/xoa-user', async (req, res) => {
     }
 });
 
-// Admin: Tạo Giáo viên
+// Tạo giáo viên (Admin)
 app.post('/api/tao-giao-vien', async (req, res) => {
     try {
         const newTeacher = new User({ ...req.body, role: 'teacher' });
@@ -118,38 +118,47 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 });
 
 // ==========================================
-// 4. BỘ NÃO AI (NHẬN FORM-DATA VÀ XUẤT ĐỀ THI)
+// 4. BỘ NÃO AI 2.0 (SƠ ĐỒ TƯ DUY + 10 CÂU CẤU TRÚC BỘ)
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
-        const isTN = req.body.isTN === 'true' || req.body.isTN === true; 
         const documentText = req.body.documentText;
-        
-        let fileBase64 = req.body.fileBase64; // Nhận Base64 từ web cũ nếu có
+        let fileBase64 = req.body.fileBase64; 
         let fileMimeType = req.body.fileMimeType;
 
-        // Nếu web gửi file thô (FormData mới), Backend tự chuyển sang Base64 cho AI
         if (req.file) {
             fileBase64 = req.file.buffer.toString('base64');
             fileMimeType = req.file.mimetype;
         }
 
+        // Đã gọi trùm cuối 3.5-flash
         const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
-        const prompt = `Bạn là chuyên gia giáo dục xuất sắc. Hãy đọc tài liệu đính kèm hoặc nội dung sau đây và tạo một bộ câu hỏi trắc nghiệm (gồm 5 câu). 
-        Cấu trúc Tốt nghiệp THPT 2025: ${isTN ? 'CÓ (Ưu tiên format câu hỏi nhiều lựa chọn và đúng/sai)' : 'KHÔNG'}.
+        // Ép AI phải trả về JSON kẹp cả 2 phần: Mindmap và 10 câu hỏi
+        const prompt = `Bạn là chuyên gia giáo dục. Hãy đọc tài liệu đính kèm hoặc nội dung sau đây và thực hiện 2 nhiệm vụ:
+        1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt kiến thức cốt lõi (Trình bày dạng văn bản có phân cấp rõ ràng bằng gạch đầu dòng).
+        2. Tạo một bộ đề kiểm tra BẮT BUỘC gồm ĐÚNG 10 câu hỏi (Gồm 8 câu loại "nhiều lựa chọn" và 2 câu loại "đúng sai").
         
-        Yêu cầu BẮT BUỘC trả về ĐÚNG định dạng MẢNG JSON, KHÔNG THÊM BẤT KỲ VĂN BẢN NÀO KHÁC BÊN NGOÀI:
-        [
-            {
-                "type": "nhiều lựa chọn",
-                "questionText": "Nội dung câu hỏi?",
-                "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
-                "correctAnswer": "A"
-            }
-        ]
+        Yêu cầu BẮT BUỘC trả về ĐÚNG định dạng JSON sau (Tuyệt đối không bọc trong markdown hay thêm text bên ngoài, format phải chuẩn JSON):
+        {
+            "mindmap": "Nội dung sơ đồ tư duy ở đây...",
+            "exam": [
+                {
+                    "type": "nhiều lựa chọn",
+                    "questionText": "Nội dung câu hỏi?",
+                    "options": ["A. Đáp án", "B. Đáp án", "C. Đáp án", "D. Đáp án"],
+                    "correctAnswer": "A"
+                },
+                {
+                    "type": "đúng sai",
+                    "questionText": "Nội dung câu hỏi đúng sai?",
+                    "subOptions": ["Ý a", "Ý b", "Ý c", "Ý d"],
+                    "correctAnswers": ["D", "S", "D", "S"]
+                }
+            ]
+        }
         
-        Nội dung văn bản (nếu có): ${documentText || 'Hãy dùng file đính kèm.'}`;
+        Nội dung văn bản: ${documentText || 'Hãy dùng file đính kèm.'}`;
 
         let result;
         if (fileBase64) {
@@ -162,14 +171,18 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         }
 
         let responseText = result.response.text();
+        
+        // Dọn dẹp rác markdown do AI tự sinh ra
         responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const examData = JSON.parse(responseText);
+        
+        // Parse ra Object chứa cả mindmap và exam
+        const aiResult = JSON.parse(responseText);
 
-        res.status(200).json({ data: examData });
+        res.status(200).json({ data: aiResult });
 
     } catch (error) {
         console.error("❌ Lỗi AI:", error);
-        res.status(500).json({ message: "Máy chủ AI đang xử lý quá tải dung lượng file, sếp thử lại nhé!" });
+        res.status(500).json({ message: "Google AI đang quá tải hoặc lỗi định dạng, sếp thử lại nhé!" });
     }
 });
 
@@ -178,5 +191,5 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 // ==========================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Hệ thống Khảo Thí Backend đang nổ máy tại cổng ${PORT}`);
+    console.log(`🚀 Hệ thống Khảo Thí Backend 2.0 đang nổ máy tại cổng ${PORT}`);
 });
