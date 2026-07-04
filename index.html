@@ -561,7 +561,6 @@
                     setupTea(); 
                 } else { 
                     $('uBadge').innerHTML = `<i class="fa-solid fa-user-graduate"></i> Học sinh: ${session.fullname}`; 
-                    // Gọi hàm setup riêng cho học sinh để tự quét chọn môn
                     setupStudent(); 
                 } 
             } else {
@@ -1012,14 +1011,12 @@
         }, 1000);
     };
 
-    // SETUP CHO HỌC SINH (TỰ ĐỘNG TẠO MENU CHỌN MÔN)
     const setupStudent = () => {
         document.body.classList.add('student-bg'); 
         $('studentPanel').style.display='block';
         
         const myGrade = session.studentClass.substring(0, 2); 
         
-        // Quét tìm tất cả các đề thi mà học sinh này CÓ QUYỀN ĐƯỢC LÀM để lấy tên Môn Học
         const validExams = examsDB.filter(e => {
             if(!e.targetClass) return false;
             const targetGrade = e.targetClass.substring(0, 2);
@@ -1029,7 +1026,6 @@
             return false;
         });
         
-        // Trích xuất danh sách các môn học (Không bị trùng lặp)
         const uniqueSubjects = [...new Set(validExams.map(e => e.subject))];
         
         let opts = '<option value="ALL">🌟 Tất cả các môn</option>';
@@ -1043,7 +1039,7 @@
 
     const loadExams = () => { 
         const myGrade = session.studentClass.substring(0, 2); 
-        const selectedSubj = $('sFilterSubj').value; // Đọc môn học đang được chọn
+        const selectedSubj = $('sFilterSubj').value; 
         
         let es = examsDB.filter(e => {
             if(!e.targetClass) return false;
@@ -1054,7 +1050,6 @@
             return false;
         }); 
 
-        // Lọc tiếp theo môn học mà học sinh đã chọn từ Menu Dropdown
         if(selectedSubj !== 'ALL') {
             es = es.filter(e => e.subject === selectedSubj);
         }
@@ -1088,7 +1083,7 @@
     const doExam = (id) => {
         $('sList').style.display='none'; 
         $('bOut').style.display='none'; 
-        $('studentSubjectFilter').style.display='none'; // Ẩn thanh chọn môn đi cho đỡ vướng khi thi
+        $('studentSubjectFilter').style.display='none'; 
 
         const ex = examsDB.find(e=>e.id===id); currentExamLen = ex.questions.length;
         let shuffledQs = shuffleArray([...ex.questions]);
@@ -1117,10 +1112,14 @@
                 let shuffledOps = shuffleArray(opsWithState); encodedCorrect = String.fromCharCode(65 + shuffledOps.findIndex(o => o.isCorrect));
                 shuffledOps.forEach((o, j) => {
                     const letter = String.fromCharCode(65+j); const tId = `tile-${i}-${j}`;
+                    
+                    // XÉN BỎ TIỀN TỐ A, B, C, D BỊ DÍNH TỪ AI
+                    let cleanText = o.text.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
+                    
                     h+=`<div class="option-tile" id="${tId}" onclick="selectTile('${tId}', 'sa_${i}', '${letter}')">
                             <input type="radio" name="sa_${i}" value="${letter}" style="display:none;">
                             <div style="width:30px; height:30px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:900; color:#64748b;">${letter}</div>
-                            <span style="font-size:16px;">${o.text}</span>
+                            <span style="font-size:16px;">${cleanText}</span>
                         </div>`;
                 }); 
             }
@@ -1128,7 +1127,10 @@
                 encodedCorrect = q.correctAnswers.join(',');
                 h+=`<table><tr><th style="background:transparent; border:none; padding:8px;"></th><th style="width:80px;text-align:center; background:#dcfce7; color:#166534; border-radius:8px;">ĐÚNG</th><th style="width:80px;text-align:center; background:#fee2e2; color:#991b1b; border-radius:8px;">SAI</th></tr>`; 
                 q.subOptions.forEach((s,j)=> {
-                    h+=`<tr><td style="border:none; padding:12px 0;"><div class="option-tile" style="margin:0;">${s}</div></td>
+                    // XÉN BỎ TIỀN TỐ a, b, c, d BỊ DÍNH
+                    let cleanSubText = s.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
+                    
+                    h+=`<tr><td style="border:none; padding:12px 0;"><div class="option-tile" style="margin:0;">${cleanSubText}</div></td>
                         <td style="text-align:center; border:none;"><input type="radio" name="sd_${i}_${j}" value="D" style="width:24px;height:24px;" onchange="updateXP()"></td>
                         <td style="text-align:center; border:none;"><input type="radio" name="sd_${i}_${j}" value="S" style="width:24px;height:24px;" onchange="updateXP()"></td></tr>`;
                 }); h+=`</table>`; 
@@ -1204,7 +1206,7 @@
         $('sDash').style.display='none'; 
         $('sList').style.display='block'; 
         $('bOut').style.display='block'; 
-        $('studentSubjectFilter').style.display='flex'; // Hiện lại thanh menu chọn môn
+        $('studentSubjectFilter').style.display='flex'; 
         loadExams(); 
     };
     
