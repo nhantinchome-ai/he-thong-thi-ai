@@ -47,7 +47,15 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // ==========================================
-// 3. CÁC API QUẢN LÝ USER
+// 3. NHÂN VIÊN LỄ TÂN ĐÓN BẢO VỆ RAILWAY (QUAN TRỌNG)
+// ==========================================
+// Trả lời tín hiệu Ping (Healthcheck) của Railway để không bị rút phích cắm
+app.get('/', (req, res) => {
+    res.status(200).send('✅ Máy chủ Backend Khảo Thí AI đang hoạt động mượt mà!');
+});
+
+// ==========================================
+// 4. CÁC API QUẢN LÝ USER
 // ==========================================
 app.post('/api/dang-ky', async (req, res) => {
     try {
@@ -111,7 +119,7 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 });
 
 // ==========================================
-// 4. BỘ NÃO AI 2.0 (SƠ ĐỒ TƯ DUY + 10 CÂU CẤU TRÚC BỘ)
+// 5. BỘ NÃO AI 2.0 (SƠ ĐỒ TƯ DUY + 10 CÂU CẤU TRÚC BỘ)
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -174,10 +182,9 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 });
 
 // ==========================================
-// 5. KHỞI ĐỘNG MÁY CHỦ (ĐÃ SỬA LỖI SIGTERM)
+// 6. KHỞI ĐỘNG MÁY CHỦ
 // ==========================================
 const PORT = process.env.PORT || 3000;
-// Bơm thêm '0.0.0.0' để mở toang cửa cho mạng bên ngoài gọi vào
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Hệ thống Khảo Thí Backend 2.0 đang nổ máy tại cổng ${PORT}`);
 });
