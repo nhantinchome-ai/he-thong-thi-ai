@@ -182,9 +182,10 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 });
 
 // ==========================================
-// 6. KHỞI ĐỘNG MÁY CHỦ
+// 6. KHỞI ĐỘNG MÁY CHỦ (BẢN CHỐT CHỐNG SẬP RAILWAY)
 // ==========================================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+// Bỏ hoàn toàn '0.0.0.0' đi để Node.js tự động mở cả cửa IPv4 và IPv6
+app.listen(PORT, () => {
     console.log(`🚀 Hệ thống Khảo Thí Backend 2.0 đang nổ máy tại cổng ${PORT}`);
 });
