@@ -10,8 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" />
     
+    <!-- Các thư viện xử lý -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- THƯ VIỆN VẼ SƠ ĐỒ TƯ DUY SIÊU CẤP (Markmap + D3) -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
 
     <style>
         :root { 
@@ -145,7 +151,7 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL)</h1>
+    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL MINDMAP)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
 
@@ -289,7 +295,6 @@
             <button class="game-btn game-btn-danger" id="bOut" onclick="doLogout()" style="padding:10px 16px; font-size:13px;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
         </div>
         
-        <!-- BỘ LỌC CHỌN MÔN YÊU THÍCH CHO HỌC SINH -->
         <div id="studentSubjectFilter" style="background:white; padding:15px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px;">
             <label style="font-weight:700; color:var(--secondary); font-size: 16px;"><i class="fa-solid fa-book-open"></i> Chọn môn học:</label>
             <select id="sFilterSubj" onchange="loadExams()" style="flex:1; max-width:300px; font-size: 16px; font-weight:600; color:var(--primary); border-color:#cbd5e1; cursor: pointer;">
@@ -366,6 +371,29 @@
         el.innerHTML = `<span style="font-size:18px;">${icon}</span> <span>${msg}</span>`; 
         box.appendChild(el); 
         setTimeout(() => el.remove(), type==='loading'? 8000 : 4000); 
+    };
+
+    // HÀM VẼ SƠ ĐỒ TƯ DUY (MARKMAP) TỪ CHỮ THÔ
+    window.renderMM = (text, svgId) => {
+        try {
+            if(!text) return;
+            // Xử lý chuẩn hóa text để tương thích với cấu trúc của Markmap
+            let lines = text.trim().split('\n');
+            if(!lines[0].trim().startsWith('#')) {
+                // Đảm bảo dòng đầu tiên là Root (Tiêu đề chính) có dấu #
+                lines[0] = '# ' + lines[0].replace(/^-/, '').trim();
+            }
+            let md = lines.join('\n');
+            
+            // Gọi thư viện
+            const { Transformer, Markmap } = window.markmap;
+            const transformer = new Transformer();
+            const { root } = transformer.transform(md);
+            
+            const svgEl = document.getElementById(svgId);
+            svgEl.innerHTML = ""; // Xóa sơ đồ cũ
+            Markmap.create(svgEl, null, root); // Vẽ sơ đồ mới
+        } catch(e) { console.error("Lỗi vẽ Mindmap:", e); }
     };
 
     const initCls = () => { 
@@ -830,12 +858,18 @@
         const mindmapText = drafts.mindmap || "";
         const questionsList = drafts.exam || [];
 
+        // Giao diện Giáo viên: Bổ sung cái SVG ở trên và Textarea ở dưới để vừa gõ vừa xem hình
         let html = `
         <div class="q-card" style="border-left: 4px solid var(--success); background: #f0fdf4;">
             <h4 style="color: var(--success); margin-top: 0; display:flex; justify-content:space-between; align-items:center;">
                 <span><i class="fa-solid fa-network-wired"></i> SƠ ĐỒ TƯ DUY (Chỉnh sửa nội dung)</span>
             </h4>
-            <textarea class="edit-in" id="editMindmap" rows="8" style="width:100%; border-color: #86efac; background: white; font-size:14px; line-height:1.6;">${mindmapText}</textarea>
+            
+            <div style="background:white; border: 1px solid #86efac; border-radius:8px; margin-bottom:15px; padding:10px; overflow:hidden;">
+                <svg id="teacher-mm" style="width:100%; height:300px;"></svg>
+            </div>
+
+            <textarea class="edit-in" id="editMindmap" rows="6" style="width:100%; border-color: #86efac; background: white; font-size:14px; line-height:1.6;" onkeyup="renderMM(this.value, 'teacher-mm')" placeholder="Nhập gạch đầu dòng để tự động vẽ sơ đồ...">${mindmapText}</textarea>
         </div>
         <h4 style="margin-top: 24px;"><i class="fa-solid fa-list-ol"></i> BỘ ${questionsList.length} CÂU HỎI KIỂM TRA</h4>
         `;
@@ -854,6 +888,9 @@
             html += `</div>`; 
         }); 
         $('qDrafts').innerHTML = html; 
+
+        // Vẽ sơ đồ ngay sau khi load giao diện xong
+        setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
     };
 
     const cancelDraft = () => { 
@@ -1094,13 +1131,18 @@
                  </div>`;
         h += `<h2 style="color:#1e293b; margin-bottom:20px; text-align:center; font-weight:900;"><i class="fa-solid fa-fire" style="color:#ef4444;"></i> NHIỆM VỤ: ${ex.topic.toUpperCase()}</h2>`;
         
+        // Khu vực hiển thị BẢN ĐỒ SVG tương tác cho học sinh
         if(ex.mindmap) {
             h += `
             <div class="q-card" style="background:#f0fdf4; border-color:#86efac; border-left:6px solid #10b981; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(16,185,129,0.1);">
-                <h3 style="color:#166534; margin-top:0; border-bottom:2px solid #bbf7d0; padding-bottom:10px;"><i class="fa-solid fa-network-wired"></i> BẢNG SƠ ĐỒ TƯ DUY (ÔN TẬP KẾT CẤU)</h3>
-                <div style="white-space: pre-wrap; font-size: 15px; color:#1e293b; line-height: 1.6;">${ex.mindmap}</div>
+                <h3 style="color:#166534; margin-top:0; border-bottom:2px solid #bbf7d0; padding-bottom:10px;"><i class="fa-solid fa-network-wired"></i> BẢNG SƠ ĐỒ TƯ DUY (Kéo thả, phóng to để xem)</h3>
+                <div style="background:white; border-radius:8px; padding:10px; overflow:hidden;">
+                    <svg id="student-mm" style="width:100%; height:450px; cursor: grab;"></svg>
+                </div>
             </div>
             `;
+            // Kích hoạt vẽ đồ họa sau khi nhúng HTML
+            setTimeout(() => renderMM(ex.mindmap, 'student-mm'), 100);
         }
 
         shuffledQs.forEach((q, i) => {
@@ -1113,7 +1155,6 @@
                 shuffledOps.forEach((o, j) => {
                     const letter = String.fromCharCode(65+j); const tId = `tile-${i}-${j}`;
                     
-                    // XÉN BỎ TIỀN TỐ A, B, C, D BỊ DÍNH TỪ AI
                     let cleanText = o.text.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
                     
                     h+=`<div class="option-tile" id="${tId}" onclick="selectTile('${tId}', 'sa_${i}', '${letter}')">
@@ -1127,7 +1168,6 @@
                 encodedCorrect = q.correctAnswers.join(',');
                 h+=`<table><tr><th style="background:transparent; border:none; padding:8px;"></th><th style="width:80px;text-align:center; background:#dcfce7; color:#166534; border-radius:8px;">ĐÚNG</th><th style="width:80px;text-align:center; background:#fee2e2; color:#991b1b; border-radius:8px;">SAI</th></tr>`; 
                 q.subOptions.forEach((s,j)=> {
-                    // XÉN BỎ TIỀN TỐ a, b, c, d BỊ DÍNH
                     let cleanSubText = s.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
                     
                     h+=`<tr><td style="border:none; padding:12px 0;"><div class="option-tile" style="margin:0;">${cleanSubText}</div></td>
