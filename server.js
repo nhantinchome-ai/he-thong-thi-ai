@@ -7,20 +7,20 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 
-// Bật CORS để cho phép web từ Cloudflare gọi vào Railway
+// Bật CORS để cho phép web gọi vào Railway
 app.use(cors());
 
-// CHÌA KHÓA PHÁ LỖI 413: Nới lỏng cổng thành lên 50MB (Mặc định nó khóa ở mức 100KB)
+// Nới lỏng cổng thành lên 50MB
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Cài đặt Multer: Dùng RAM làm bộ đệm để nhận file thô siêu tốc (Tối đa 50MB)
+// Cài đặt Multer: Dùng RAM làm bộ đệm
 const upload = multer({ 
     storage: multer.memoryStorage(),
     limits: { fileSize: 50 * 1024 * 1024 } 
 });
 
-// Khởi tạo Gemini AI (Dùng key từ biến môi trường)
+// Khởi tạo Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ==========================================
@@ -49,8 +49,6 @@ const User = mongoose.model('User', userSchema);
 // ==========================================
 // 3. CÁC API QUẢN LÝ USER
 // ==========================================
-
-// Đăng ký học sinh
 app.post('/api/dang-ky', async (req, res) => {
     try {
         const newUser = new User({ ...req.body, role: 'student' });
@@ -61,11 +59,9 @@ app.post('/api/dang-ky', async (req, res) => {
     }
 });
 
-// Đăng nhập
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
-        // Tự động tạo Admin
         if (username === 'admin' && password === 'admin') {
             let adminUser = await User.findOne({ username: 'admin' });
             if (!adminUser) {
@@ -86,7 +82,6 @@ app.post('/api/dang-nhap', async (req, res) => {
     }
 });
 
-// Lấy tất cả user (Admin)
 app.get('/api/admin/tat-ca-users', async (req, res) => {
     try {
         const users = await User.find({});
@@ -96,7 +91,6 @@ app.get('/api/admin/tat-ca-users', async (req, res) => {
     }
 });
 
-// Xóa user (Admin)
 app.post('/api/admin/xoa-user', async (req, res) => {
     try {
         await User.findByIdAndDelete(req.body.userId);
@@ -106,7 +100,6 @@ app.post('/api/admin/xoa-user', async (req, res) => {
     }
 });
 
-// Tạo giáo viên (Admin)
 app.post('/api/tao-giao-vien', async (req, res) => {
     try {
         const newTeacher = new User({ ...req.body, role: 'teacher' });
@@ -131,10 +124,8 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             fileMimeType = req.file.mimetype;
         }
 
-        // Đã gọi trùm cuối 3.5-flash
         const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
-        // Ép AI phải trả về JSON kẹp cả 2 phần: Mindmap và 10 câu hỏi
         const prompt = `Bạn là chuyên gia giáo dục. Hãy đọc tài liệu đính kèm hoặc nội dung sau đây và thực hiện 2 nhiệm vụ:
         1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt kiến thức cốt lõi (Trình bày dạng văn bản có phân cấp rõ ràng bằng gạch đầu dòng).
         2. Tạo một bộ đề kiểm tra BẮT BUỘC gồm ĐÚNG 10 câu hỏi (Gồm 8 câu loại "nhiều lựa chọn" và 2 câu loại "đúng sai").
@@ -171,11 +162,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         }
 
         let responseText = result.response.text();
-        
-        // Dọn dẹp rác markdown do AI tự sinh ra
         responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
-        // Parse ra Object chứa cả mindmap và exam
         const aiResult = JSON.parse(responseText);
 
         res.status(200).json({ data: aiResult });
@@ -187,9 +174,10 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 });
 
 // ==========================================
-// 5. KHỞI ĐỘNG MÁY CHỦ
+// 5. KHỞI ĐỘNG MÁY CHỦ (ĐÃ SỬA LỖI SIGTERM)
 // ==========================================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+// Bơm thêm '0.0.0.0' để mở toang cửa cho mạng bên ngoài gọi vào
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Hệ thống Khảo Thí Backend 2.0 đang nổ máy tại cổng ${PORT}`);
 });
