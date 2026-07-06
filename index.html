@@ -61,7 +61,6 @@
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 6px; font-weight: 600; color: var(--text-muted); transition: all 0.2s; font-size: 14px; }
         .tab.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-        /* Nút 3 Chế Độ Tạo Đề */
         .mode-tabs { display: flex; gap: 15px; margin-bottom: 24px; }
         .mode-btn { flex: 1; text-align: center; padding: 16px; border-radius: 12px; border: 2px solid var(--border); cursor: pointer; font-weight: 700; color: var(--text-muted); transition: 0.2s; background: white; }
         .mode-btn:hover { border-color: #cbd5e1; }
@@ -134,7 +133,6 @@
         .t-ok { background: #10b981; } .t-err { background: #ef4444; } .t-warn { background: #f59e0b; } .t-loading { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* Style Giao Diện Phân Khối */
         .grade-section { margin-bottom: 40px; }
         .grade-title { 
             font-size: 18px; font-weight: 800; color: var(--primary); 
@@ -185,13 +183,13 @@
     <div id="authSection" class="card" style="max-width: 420px; margin: 60px auto;">
         <div class="tabs"><div class="tab active" id="tLog" onclick="switchT('login')">Đăng Nhập</div><div class="tab" id="tReg" onclick="switchT('register')">Hồ Sơ Mới</div></div>
         <div id="fLog">
-            <div class="form-group"><label>Mã định danh:</label><input type="text" id="lUsr" placeholder="Tài khoản..."></div>
+            <div class="form-group"><label>Tên đăng nhập:</label><input type="text" id="lUsr" placeholder="Tên đăng nhập..."></div>
             <div class="form-group"><label>Mật khẩu:</label><div class="pwd-box"><input type="password" id="lPwd" placeholder="Mật khẩu..."><i class="fa-solid fa-eye btn-eye" onclick="togglePwd('lPwd', this)"></i></div></div>
             <button class="btn-full" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> ĐĂNG NHẬP</button>
         </div>
         <div id="fReg" class="hidden">
             <div class="form-group"><label>Họ và tên đầy đủ:</label><input type="text" id="rName"></div>
-            <div class="form-group"><label>Mã định danh mới:</label><input type="text" id="rUsr"></div>
+            <div class="form-group"><label>Tên đăng nhập:</label><input type="text" id="rUsr"></div>
             <div class="form-group"><label>Mật khẩu:</label><div class="pwd-box"><input type="password" id="rPwd"><i class="fa-solid fa-eye btn-eye" onclick="togglePwd('rPwd', this)"></i></div></div>
             <div style="display:flex; gap:15px;">
                 <div class="form-group" style="flex:1;"><label>Khối:</label><select id="rGr" onchange="loadClass()"><option value="">-- Chọn --</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div>
@@ -204,14 +202,14 @@
     <div id="adminPanel" class="panel card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
             <h2 class="section-title" style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> QUẢN TRỊ HỆ THỐNG</h2>
-            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-power-off"></i> Đóng phiên</button>
+            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
         </div>
         <div style="display:flex; gap:30px;">
             <div style="flex:1;">
                 <h3 style="margin-top:0; font-size:16px;"><i class="fa-solid fa-user-tie" style="color:var(--primary);"></i> Cấp Quyền Cán Bộ</h3>
                 <div style="background:var(--bg-light); padding:20px; border-radius:8px; border:1px solid var(--border);">
                     <div class="form-group"><label>Họ tên GV:</label><input type="text" id="aName"></div>
-                    <div class="form-group"><label>Mã (User):</label><input type="text" id="aUsr"></div>
+                    <div class="form-group"><label>Tên đăng nhập:</label><input type="text" id="aUsr"></div>
                     <div class="form-group"><label>Mật khẩu:</label><div class="pwd-box"><input type="password" id="aPwd"><i class="fa-solid fa-eye btn-eye" onclick="togglePwd('aPwd', this)"></i></div></div>
                     <div class="form-group"><label>Chuyên môn:</label>
                         <select id="aSubj">
@@ -249,7 +247,7 @@
     <div id="teacherPanel" class="panel card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
             <h2 class="section-title" style="margin:0; border:none; padding:0;"><i class="fa-solid fa-graduation-cap"></i> KHU VỰC KHẢO THÍ CHUYÊN MÔN - <span id="tLockSubj" style="color:var(--primary);"></span></h2>
-            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-power-off"></i> Đóng phiên</button>
+            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
         </div>
 
         <div class="tabs">
@@ -258,8 +256,6 @@
         </div>
         
         <div id="teaRaDeArea">
-            
-            <!-- 3 CHẾ ĐỘ RÕ RÀNG NHƯ BAN NGÀY -->
             <div class="mode-tabs">
                 <div class="mode-btn active" id="modeGenerate" onclick="setMode('generate')">
                     <i class="fa-solid fa-robot"></i> AI Sáng Tác Đề
@@ -297,7 +293,6 @@
                     <div class="form-group" style="flex:2;"><label>Tên bài (Tiêu đề):</label><input type="text" id="tWeek" placeholder="VD: Bài 1: Khái quát hệ thống..."></div>
                 </div>
 
-                <!-- KHU VỰC CHỈ HIỆN KHI DÙNG AI (Generate hoặc Scan) -->
                 <div id="aiComponents">
                     <div class="form-group" id="promptArea">
                         <label style="color:var(--primary); font-size:15px;"><i class="fa-solid fa-terminal"></i> Lệnh AI tùy chỉnh (Tùy chọn):</label>
@@ -325,7 +320,7 @@
                     </div>
                 </div>
                 
-                <button id="btnSubmitMode" onclick="handleModeSubmit()" style="font-size:16px; padding:16px; width:100%;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI ĐỌC DỮ LIỆU & TẠO ĐỀ</button>
+                <button id="btnSubmitMode" onclick="handleModeSubmit()" class="btn-full" style="font-size:16px; padding:16px;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI ĐỌC DỮ LIỆU & TẠO ĐỀ</button>
             </div>
             
             <div id="tReview" class="hidden" style="border:1px solid var(--primary); border-radius:8px; padding:24px; margin-top:24px;">
@@ -333,7 +328,6 @@
                 
                 <div id="qDrafts"></div>
                 
-                <!-- BỘ NÚT CHO GIÁO VIÊN TỰ TẠO THÊM CÂU HỎI BẰNG TAY -->
                 <div style="display:flex; gap:10px; margin-top:20px; padding:15px; background:var(--bg-light); border-radius:8px; border:1px dashed #cbd5e1;">
                     <span style="font-weight:700; color:var(--secondary); align-self:center; margin-right:10px;">Thêm thủ công:</span>
                     <button class="btn-outline" onclick="addManualQuestion('nhiều lựa chọn')" style="padding:8px 16px; font-size:13px;"><i class="fa-solid fa-plus"></i> Câu Trắc Nghiệm</button>
@@ -391,7 +385,7 @@
     let editingExamId = null;
     let timerInterval = null; 
     
-    let currentMode = 'generate'; // generate | scan | manual
+    let currentMode = 'generate'; 
     let currentFileBase64 = null;
     let currentMimeType = null;
     let currentExtractedText = "";
@@ -446,7 +440,6 @@
         setTimeout(() => el.remove(), type==='loading'? 8000 : 4000); 
     };
 
-    // HÀM CHUYỂN ĐỔI 3 CHẾ ĐỘ RA ĐỀ
     window.setMode = (mode) => {
         currentMode = mode;
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -462,14 +455,14 @@
         } else if (mode === 'scan') {
             $('modeScan').classList.add('active');
             $('aiComponents').style.display = 'block';
-            $('promptArea').style.display = 'none'; // Ẩn prompt vì sẽ dùng prompt cứng trong js
+            $('promptArea').style.display = 'none'; 
             $('uploadLabel').innerHTML = '<span style="color:var(--danger);"><i class="fa-solid fa-camera"></i> Tải file Đề Thi có sẵn để AI quét và trích xuất (Ảnh JPG/PNG, PDF, Word):</span>';
             $('dropZoneText').innerText = "Kéo thả Ảnh chụp đề thi hoặc PDF vào đây";
             $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-camera-viewfinder"></i> QUÉT VÀ BÓC TÁCH ĐỀ (AZOTA)';
             $('btnSubmitMode').className = 'btn-danger btn-full';
         } else if (mode === 'manual') {
             $('modeManual').classList.add('active');
-            $('aiComponents').style.display = 'none'; // Ẩn hoàn toàn nút tải file và prompt
+            $('aiComponents').style.display = 'none'; 
             $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-keyboard"></i> BẮT ĐẦU GÕ ĐỀ THỦ CÔNG MỚI';
             $('btnSubmitMode').className = 'btn-success btn-full';
         }
@@ -721,7 +714,7 @@
             if(res.ok) { 
                 toast("Đăng ký thành công!", "success"); switchT('login'); 
             } else {
-                toast("Mã định danh đã tồn tại!", "error"); 
+                toast("Tên đăng nhập đã tồn tại!", "error"); 
             }
         } catch(e) { 
             toast("Lỗi đường truyền mạng!", "error"); 
@@ -801,7 +794,7 @@
     const openUserModal = (encodedData) => { 
         const u = JSON.parse(decodeURIComponent(encodedData)); 
         $('mTitle').innerHTML = `<i class="fa-solid fa-user-pen"></i> Hồ Sơ: ${u.fullname}`; 
-        let detHtml = `<div class="modal-row"><b>Tài khoản:</b> <span>${u.username}</span></div><div class="modal-row"><b>Mật khẩu:</b> <span style="color:var(--danger); font-family:monospace;">${u.password}</span></div><div class="modal-row"><b>Chức vụ:</b> <span>${u.role.toUpperCase()}</span></div>`; 
+        let detHtml = `<div class="modal-row"><b>Tên đăng nhập:</b> <span>${u.username}</span></div><div class="modal-row"><b>Mật khẩu:</b> <span style="color:var(--danger); font-family:monospace;">${u.password}</span></div><div class="modal-row"><b>Chức vụ:</b> <span>${u.role.toUpperCase()}</span></div>`; 
         if(u.role === 'teacher') { 
             detHtml += `<div class="modal-row"><b>Môn:</b> <span>${u.teachingSubject || 'N/A'}</span></div><div class="modal-row"><b>CN Lớp:</b> <span>${u.homeroomClass || 'Không'}</span></div><div class="modal-row"><b>Dạy Lớp:</b> <span>${u.teachingClasses || 'N/A'}</span></div>`; 
         } else if(u.role === 'student') { 
@@ -842,7 +835,7 @@
                 document.querySelectorAll('.aCb').forEach(cb=>cb.checked=false); 
                 $('aHr').value='';
             } else {
-                toast("Trùng User định danh!", "error"); 
+                toast("Trùng Tên đăng nhập!", "error"); 
             }
         } catch(e) { 
             toast("Lỗi mạng!", "error"); 
@@ -942,7 +935,6 @@
         
         let finalCustomPrompt = $('tCustomPrompt').value;
 
-        // ÉP LỆNH NẾU ĐANG CHỌN CHẾ ĐỘ QUÉT ĐỀ CÓ SẴN (AZOTA MODE)
         if(currentMode === 'scan') {
             finalCustomPrompt = "ĐÂY LÀ ẢNH CHỤP HOẶC PDF CỦA MỘT ĐỀ THI CÓ SẴN. Yêu cầu: Đóng vai trò là phần mềm Scan văn bản, TRÍCH XUẤT CHÍNH XÁC từng câu hỏi, các đáp án A, B, C, D từ hình ảnh/văn bản này. KHÔNG ĐƯỢC TỰ BỊA THÊM HAY CẮT BỚT. Nếu đề có đánh dấu đáp án thì ghi nhận, chưa có thì tự giải. Tóm tắt nội dung chính làm sơ đồ tư duy.";
         }
@@ -1038,7 +1030,7 @@
         setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
     };
 
-    window.removeQuestion = (index) => {
+    const removeQuestion = (index) => {
         if(confirm("Xóa câu hỏi này?")) {
             saveCurrentDraftValues();
             drafts.exam.splice(index, 1);
