@@ -61,6 +61,14 @@
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 6px; font-weight: 600; color: var(--text-muted); transition: all 0.2s; font-size: 14px; }
         .tab.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
+        /* Nút 3 Chế Độ Tạo Đề */
+        .mode-tabs { display: flex; gap: 15px; margin-bottom: 24px; }
+        .mode-btn { flex: 1; text-align: center; padding: 16px; border-radius: 12px; border: 2px solid var(--border); cursor: pointer; font-weight: 700; color: var(--text-muted); transition: 0.2s; background: white; }
+        .mode-btn:hover { border-color: #cbd5e1; }
+        .mode-btn.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); box-shadow: 0 4px 0 var(--primary); transform: translateY(-4px); }
+        .mode-btn i { display: block; font-size: 28px; margin-bottom: 10px; transition: 0.2s; }
+        .mode-btn.active i { transform: scale(1.1); }
+
         .folder { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; background: white; transition: 0.2s; }
         .folder-head { padding: 14px 20px; background: var(--bg-light); cursor: pointer; font-weight: 600; color: var(--secondary); display: flex; justify-content: space-between; align-items: center; border-radius: 8px; font-size: 14px; }
         .folder-head i { color: #94a3b8; margin-right: 8px; transition: 0.2s; }
@@ -245,30 +253,32 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" id="tabRaDe" onclick="switchTeaTab('rade')"><i class="fa-solid fa-microchip"></i> Nạp Liệu & Soạn Đề</div>
+            <div class="tab active" id="tabRaDe" onclick="switchTeaTab('rade')"><i class="fa-solid fa-microchip"></i> Soạn Đề Mới</div>
             <div class="tab" id="tabThongKe" onclick="switchTeaTab('thongke')"><i class="fa-solid fa-chart-line"></i> Quản Lý & Sổ Điểm</div>
         </div>
         
         <div id="teaRaDeArea">
-            <div id="tInput" style="background:white; padding:24px; border-radius:8px; border:1px solid var(--border);">
-                <div class="form-group" style="background:#eef2ff; padding:15px; border-radius:8px; border:1px solid #c7d2fe;">
-                    <label style="color:var(--primary); font-size:16px;"><i class="fa-solid fa-robot"></i> Cấu Hình Trí Tuệ Nhân Tạo:</label>
-                    
-                    <div style="display:flex; gap:30px; margin-top:12px; margin-bottom: 15px;">
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                            <input type="radio" name="tAiMode" value="generate" style="width:20px; height:20px;" checked> 
-                            <span><b>Sáng tác đề:</b> Đọc sách/tài liệu và tự soạn bộ đề mới.</span>
-                        </label>
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                            <input type="radio" name="tAiMode" value="extract" style="width:20px; height:20px;"> 
-                            <span style="color:var(--danger);"><b>Quét đề có sẵn (Azota):</b> Trích xuất nguyên bản từ file.</span>
-                        </label>
-                    </div>
+            
+            <!-- 3 CHẾ ĐỘ RÕ RÀNG NHƯ BAN NGÀY -->
+            <div class="mode-tabs">
+                <div class="mode-btn active" id="modeGenerate" onclick="setMode('generate')">
+                    <i class="fa-solid fa-robot"></i> AI Sáng Tác Đề
+                </div>
+                <div class="mode-btn" id="modeScan" onclick="setMode('scan')">
+                    <i class="fa-solid fa-camera-viewfinder"></i> Quét Ảnh Đề (Azota)
+                </div>
+                <div class="mode-btn" id="modeManual" onclick="setMode('manual')">
+                    <i class="fa-solid fa-keyboard"></i> Soạn Đề Thủ Công
+                </div>
+            </div>
 
-                    <div style="margin-top: 10px;">
-                        <label style="font-size:13px; color:#475569;"><i class="fa-solid fa-terminal"></i> Lệnh AI tùy chỉnh (Ví dụ: Soạn 5 câu khó, tập trung chương 2...)</label>
-                        <textarea id="tCustomPrompt" rows="2" placeholder="Nhập yêu cầu đặc biệt vào đây (Không bắt buộc)..." style="font-size:14px; margin-top:5px; border-color:#a5b4fc;"></textarea>
-                    </div>
+            <div id="tInput" style="background:white; padding:24px; border-radius:12px; border:1px solid var(--border);">
+                
+                <div class="form-group" style="background:#fffbeb; padding:15px; border-radius:8px; border:1px solid #fde68a;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin:0;">
+                        <input type="checkbox" id="tIsTN" style="width:20px; height:20px;" checked> 
+                        <span style="color:#d97706; font-weight:800; font-size:15px;"><i class="fa-solid fa-star"></i> Áp dụng Cấu trúc Đề thi Tốt nghiệp 2025</span>
+                    </label>
                 </div>
                 
                 <div style="display:flex; gap:15px;">
@@ -287,30 +297,35 @@
                     <div class="form-group" style="flex:2;"><label>Tên bài (Tiêu đề):</label><input type="text" id="tWeek" placeholder="VD: Bài 1: Khái quát hệ thống..."></div>
                 </div>
 
-                <div class="form-group">
-                    <label>Nạp học liệu gốc (Chấp nhận Ảnh, PDF, Word, PowerPoint dạng kéo thả):</label>
-                    <div id="dropZone" class="drop-zone">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <p>Kéo thả File hoặc Thư mục vào đây để tải lên</p>
-                        <small>Hoặc click vào khung này để chọn (Giữ Ctrl để chọn nhiều ảnh)</small>
-                        <input type="file" id="tFile" accept=".pdf, .docx, .txt, .jpg, .jpeg, .png" multiple hidden>
+                <!-- KHU VỰC CHỈ HIỆN KHI DÙNG AI (Generate hoặc Scan) -->
+                <div id="aiComponents">
+                    <div class="form-group" id="promptArea">
+                        <label style="color:var(--primary); font-size:15px;"><i class="fa-solid fa-terminal"></i> Lệnh AI tùy chỉnh (Tùy chọn):</label>
+                        <textarea id="tCustomPrompt" rows="2" placeholder="VD: Soạn cho tôi 5 câu khó, tập trung vào kiến thức nâng cao..." style="border-color:#a5b4fc; background:#eef2ff;"></textarea>
                     </div>
-                    <div id="fileInfo" class="file-info-box">
-                        <div class="file-info-left">
-                            <i id="fileIcon" class="fa-solid fa-file-pdf file-icon"></i>
-                            <div class="file-details">
-                                <h4 id="fileName">bai_tap_chuong_1.pdf</h4>
-                                <span id="fileSize">2.4 MB</span>
-                            </div>
+
+                    <div class="form-group" id="fileUploadArea">
+                        <label id="uploadLabel">Nạp học liệu gốc để AI sáng tác (Tài liệu Word, PDF, Ảnh):</label>
+                        <div id="dropZone" class="drop-zone">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p id="dropZoneText">Kéo thả File hoặc Thư mục vào đây để tải lên</p>
+                            <small id="dropZoneSubText">Hỗ trợ nhận diện TẤT CẢ các loại ẢNH (JPG, PNG), PDF, Word, TXT (Chọn nhiều ảnh cùng lúc thoải mái)</small>
+                            <input type="file" id="tFile" accept=".pdf, .docx, .txt, .jpg, .jpeg, .png" multiple hidden>
                         </div>
-                        <button class="btn-outline" style="border-color:#cbd5e1; color:#64748b; padding:8px 12px; font-size:13px;" onclick="resetUploader()"><i class="fa-solid fa-xmark"></i> Xóa</button>
+                        <div id="fileInfo" class="file-info-box">
+                            <div class="file-info-left">
+                                <i id="fileIcon" class="fa-solid fa-file-pdf file-icon"></i>
+                                <div class="file-details">
+                                    <h4 id="fileName">bai_tap_chuong_1.pdf</h4>
+                                    <span id="fileSize">2.4 MB</span>
+                                </div>
+                            </div>
+                            <button class="btn-outline" style="border-color:#cbd5e1; color:#64748b; padding:8px 12px; font-size:13px;" onclick="resetUploader()"><i class="fa-solid fa-xmark"></i> Xóa</button>
+                        </div>
                     </div>
                 </div>
                 
-                <div style="display:flex; gap:15px; margin-top:20px;">
-                    <button onclick="reqAI()" style="font-size:16px; padding:16px; flex:2;"><i class="fa-solid fa-wand-magic-sparkles"></i> GIAO CHO AI XỬ LÝ DỮ LIỆU ĐỂ TẠO ĐỀ</button>
-                    <button class="btn-outline" onclick="manualCreate()" style="font-size:15px; padding:16px; flex:1;"><i class="fa-solid fa-pen-nib"></i> BỎ QUA AI, SOẠN THỦ CÔNG</button>
-                </div>
+                <button id="btnSubmitMode" onclick="handleModeSubmit()" style="font-size:16px; padding:16px; width:100%;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI ĐỌC DỮ LIỆU & TẠO ĐỀ</button>
             </div>
             
             <div id="tReview" class="hidden" style="border:1px solid var(--primary); border-radius:8px; padding:24px; margin-top:24px;">
@@ -318,6 +333,7 @@
                 
                 <div id="qDrafts"></div>
                 
+                <!-- BỘ NÚT CHO GIÁO VIÊN TỰ TẠO THÊM CÂU HỎI BẰNG TAY -->
                 <div style="display:flex; gap:10px; margin-top:20px; padding:15px; background:var(--bg-light); border-radius:8px; border:1px dashed #cbd5e1;">
                     <span style="font-weight:700; color:var(--secondary); align-self:center; margin-right:10px;">Thêm thủ công:</span>
                     <button class="btn-outline" onclick="addManualQuestion('nhiều lựa chọn')" style="padding:8px 16px; font-size:13px;"><i class="fa-solid fa-plus"></i> Câu Trắc Nghiệm</button>
@@ -375,6 +391,7 @@
     let editingExamId = null;
     let timerInterval = null; 
     
+    let currentMode = 'generate'; // generate | scan | manual
     let currentFileBase64 = null;
     let currentMimeType = null;
     let currentExtractedText = "";
@@ -427,6 +444,51 @@
         el.innerHTML = `<span style="font-size:18px;">${icon}</span> <span>${msg}</span>`; 
         box.appendChild(el); 
         setTimeout(() => el.remove(), type==='loading'? 8000 : 4000); 
+    };
+
+    // HÀM CHUYỂN ĐỔI 3 CHẾ ĐỘ RA ĐỀ
+    window.setMode = (mode) => {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        
+        if (mode === 'generate') {
+            $('modeGenerate').classList.add('active');
+            $('aiComponents').style.display = 'block';
+            $('promptArea').style.display = 'block';
+            $('uploadLabel').innerText = "Nạp học liệu gốc để AI đọc và sáng tác (Tài liệu Word, PDF, Ảnh):";
+            $('dropZoneText').innerText = "Kéo thả File hoặc Thư mục vào đây để tải lên";
+            $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI ĐỌC DỮ LIỆU & TẠO ĐỀ';
+            $('btnSubmitMode').className = 'btn-full';
+        } else if (mode === 'scan') {
+            $('modeScan').classList.add('active');
+            $('aiComponents').style.display = 'block';
+            $('promptArea').style.display = 'none'; // Ẩn prompt vì sẽ dùng prompt cứng trong js
+            $('uploadLabel').innerHTML = '<span style="color:var(--danger);"><i class="fa-solid fa-camera"></i> Tải file Đề Thi có sẵn để AI quét và trích xuất (Ảnh JPG/PNG, PDF, Word):</span>';
+            $('dropZoneText').innerText = "Kéo thả Ảnh chụp đề thi hoặc PDF vào đây";
+            $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-camera-viewfinder"></i> QUÉT VÀ BÓC TÁCH ĐỀ (AZOTA)';
+            $('btnSubmitMode').className = 'btn-danger btn-full';
+        } else if (mode === 'manual') {
+            $('modeManual').classList.add('active');
+            $('aiComponents').style.display = 'none'; // Ẩn hoàn toàn nút tải file và prompt
+            $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-keyboard"></i> BẮT ĐẦU GÕ ĐỀ THỦ CÔNG MỚI';
+            $('btnSubmitMode').className = 'btn-success btn-full';
+        }
+    };
+
+    window.handleModeSubmit = () => {
+        if(currentMode === 'manual') {
+            if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
+            drafts = { mindmap: "# Nhập Tên Chủ Đề Ở Đây\n- Ý chính 1\n  - Nhánh nhỏ 1\n- Ý chính 2", exam: [] }; 
+            editingExamId = null; 
+            switchTeaTab('rade');
+            $('tInput').style.display='none'; 
+            $('tReview').style.display='block'; 
+            $('qDrafts').innerHTML=""; 
+            renderDraft();
+            toast("Đã vào chế độ tự gõ đề!", "success");
+        } else {
+            reqAI();
+        }
     };
 
     window.renderMM = (text, svgId) => {
@@ -600,13 +662,13 @@
                 
                 $('fileSize').innerText = "Đã nối ảnh xong!";
                 $('fileName').innerText = `Đã gộp ${files.length} ảnh thành 1`;
-                toast(`Đã gộp thành công ${files.length} trang, quất AI thôi sếp!`, "success");
+                toast(`Đã gộp thành công ${files.length} trang Ảnh, quất AI thôi sếp!`, "success");
             } catch (err) {
                 toast("Lỗi khi nối ảnh: " + err.message, "error");
             }
         }
         else { 
-            toast("Hệ thống chỉ nhận Ảnh, PDF, Word, PowerPoint, TXT!", "error"); 
+            toast("Hệ thống chỉ nhận Ảnh JPG/PNG, PDF, Word, PowerPoint, TXT!", "error"); 
             resetUploader();
         } 
     };
@@ -849,19 +911,6 @@
         $('publishedExamsList').innerHTML = h;
     };
 
-    // NÚT SOẠN ĐỀ THỦ CÔNG (Bỏ qua AI)
-    window.manualCreate = () => {
-        if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
-        
-        drafts = { mindmap: "# Nhập Tên Chủ Đề Ở Đây\n- Ý chính 1\n  - Nhánh nhỏ 1\n- Ý chính 2", exam: [] }; 
-        editingExamId = null; 
-        
-        switchTeaTab('rade');
-        renderDraft();
-        toast("Đã chuyển sang chế độ Tự gõ đề thủ công!", "success");
-    };
-
-    // TÍNH NĂNG THÊM CÂU HỎI THỦ CÔNG
     window.addManualQuestion = (type) => {
         if (!drafts.exam) drafts.exam = [];
         
@@ -887,16 +936,15 @@
 
     const reqAI = async () => { 
         if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
-        if (!currentFileBase64 && !currentExtractedText) return toast("Sếp ơi, nạp tài liệu vào hộp trước đã!", "warn");
+        if (!currentFileBase64 && !currentExtractedText) return toast("Sếp ơi, nạp tài liệu hoặc Ảnh vào hộp trước đã!", "warn");
 
         toast("Đang nén và phóng dữ liệu qua Cloud AI...", "loading"); 
         
-        const aiMode = document.querySelector('input[name="tAiMode"]:checked').value;
         let finalCustomPrompt = $('tCustomPrompt').value;
 
-        // CÀI ĐẶT LỆNH ÉP CUNG THEO CHẾ ĐỘ AZOTA
-        if(aiMode === 'extract') {
-            finalCustomPrompt = "ĐÂY LÀ MỘT ĐỀ THI CÓ SẴN. Yêu cầu: TRÍCH XUẤT CHÍNH XÁC từng câu hỏi, các đáp án A, B, C, D từ văn bản. KHÔNG ĐƯỢC TỰ BỊA THÊM HAY CẮT BỚT. Nếu đề có đáp án thì ghi nhận, chưa có thì tự giải. Sơ đồ tư duy hãy tự tóm tắt chủ đề của đề thi này. " + finalCustomPrompt;
+        // ÉP LỆNH NẾU ĐANG CHỌN CHẾ ĐỘ QUÉT ĐỀ CÓ SẴN (AZOTA MODE)
+        if(currentMode === 'scan') {
+            finalCustomPrompt = "ĐÂY LÀ ẢNH CHỤP HOẶC PDF CỦA MỘT ĐỀ THI CÓ SẴN. Yêu cầu: Đóng vai trò là phần mềm Scan văn bản, TRÍCH XUẤT CHÍNH XÁC từng câu hỏi, các đáp án A, B, C, D từ hình ảnh/văn bản này. KHÔNG ĐƯỢC TỰ BỊA THÊM HAY CẮT BỚT. Nếu đề có đánh dấu đáp án thì ghi nhận, chưa có thì tự giải. Tóm tắt nội dung chính làm sơ đồ tư duy.";
         }
 
         let payload = {
@@ -915,8 +963,10 @@
             if(res.ok) { 
                 drafts = (await res.json()).data; 
                 editingExamId = null; 
+                $('tInput').style.display='none'; 
+                $('tReview').style.display='block'; 
                 renderDraft(); 
-                toast("AI đã chế tác thành công bài khảo thí!", "success"); 
+                toast("AI đã bóc tách thành công bài khảo thí!", "success"); 
             } else {
                 toast("AI báo lỗi định dạng dữ liệu (File quá tải)!", "error"); 
             }
@@ -935,6 +985,8 @@
         editingExamId = id; 
         
         switchTeaTab('rade');
+        $('tInput').style.display='none'; 
+        $('tReview').style.display='block'; 
         renderDraft();
         toast("Đã nạp đề cũ vào để chỉnh sửa!", "success");
     };
@@ -948,8 +1000,6 @@
     };
 
     const renderDraft = () => { 
-        $('tInput').style.display='none'; 
-        $('tReview').style.display='block'; 
         $('qDrafts').innerHTML=""; 
         
         const mindmapText = drafts.mindmap || "";
@@ -988,7 +1038,6 @@
         setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
     };
 
-    // Hàm xóa câu hỏi cho nút thùng rác bên trong mảng Drafts
     window.removeQuestion = (index) => {
         if(confirm("Xóa câu hỏi này?")) {
             saveCurrentDraftValues();
@@ -997,7 +1046,6 @@
         }
     };
 
-    // Hàm lưu lại các giá trị đang gõ lỡ dở trên form trước khi Render lại (để không bị mất chữ khi bấm thêm câu hỏi)
     const saveCurrentDraftValues = () => {
         drafts.mindmap = $('editMindmap').value;
         const questionsList = drafts.exam || [];
@@ -1021,13 +1069,12 @@
     };
 
     const pubExam = () => { 
-        saveCurrentDraftValues(); // Ép lưu tất cả các ô input hiện tại
+        saveCurrentDraftValues(); 
         
         let fQs = drafts.exam; 
         const finalMindmap = drafts.mindmap;
         const examCategory = $('tCategory').value || 'Không phân loại'; 
         
-        // Lưu thời gian tạo đề để xử lý Logic Học sinh mới chuyển trường
         const createTime = Date.now();
 
         if (editingExamId) {
@@ -1038,7 +1085,6 @@
                 examsDB[index].topic = $('tWeek').value;
                 examsDB[index].mindmap = finalMindmap;
                 examsDB[index].questions = fQs;
-                // Khi edit thì KHÔNG đổi createdAt để không ảnh hưởng học sinh cũ
             }
             toast("Đã cập nhật lại Đề thi & Sơ đồ!", "success"); 
         } else {
@@ -1051,7 +1097,7 @@
                 mindmap: finalMindmap, 
                 questions: fQs, 
                 teacherName: session.fullname,
-                createdAt: createTime // Đóng dấu thời gian ra đời của bài kiểm tra
+                createdAt: createTime 
             }); 
             toast("Đã công bố Đề thi & Sơ đồ lên bảng tin!", "success"); 
         }
@@ -1257,10 +1303,7 @@
                 examsByCat[cat].push(e);
             });
 
-            // THUẬT TOÁN SO SÁNH THỜI GIAN "HỌC SINH MỚI CHUYỂN TRƯỜNG"
-            // Lấy thời gian đăng ký của tài khoản học sinh đang đăng nhập
             const studentEnrollTime = session.createdAt || 0; 
-            
             let previousPassed = true;
 
             let availableCats = Object.keys(examsByCat).sort((a,b) => {
@@ -1284,12 +1327,10 @@
                         const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username);
                         const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10);
 
-                        // KIỂM TRA ĐỀ CŨ HAY ĐỀ MỚI SO VỚI TÀI KHOẢN
-                        const examCreateTime = e.createdAt || 0; // Những đề hồi xưa tạo chưa có createdAt thì lấy bằng 0
-                        const isLegacyExam = examCreateTime < studentEnrollTime; // Đề tạo TRƯỚC khi học sinh vào trường
+                        const examCreateTime = e.createdAt || 0; 
+                        const isLegacyExam = examCreateTime < studentEnrollTime; 
 
                         let btnHtm = '';
-                        // Luật Khóa: Nếu đang ở Khu Vực Học Mới (!isReview), VÀ đề này là Đề Mới Giao Gần Đây (!isLegacyExam), VÀ Bài trước chưa full 10 (!previousPassed) -> KHÓA!
                         let isLocked = !isReview && !isLegacyExam && !previousPassed;
 
                         if(isLocked) {
@@ -1302,12 +1343,10 @@
                             }
                         }
 
-                        // Nếu là Legacy Exam (đề cũ hơn cả lúc HS vào trường) thì đắp thêm cái huy hiệu thông báo
                         const legacyBadge = isLegacyExam && !isReview ? `<span style="margin-left:8px; font-size:11px; background:#dcfce7; color:#166534; padding:2px 8px; border-radius:10px;"><i class="fa-solid fa-unlock-keyhole"></i> Đã mở khóa (Học sinh mới)</span>` : ``;
 
                         blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic} ${legacyBadge}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
                         
-                        // Chỉ những đề MỚI mới ảnh hưởng đến chuỗi khóa tuần tự của học sinh
                         if (!isReview && !isLegacyExam) {
                             previousPassed = isDonePerfect; 
                         }
