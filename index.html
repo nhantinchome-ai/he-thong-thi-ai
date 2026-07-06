@@ -126,7 +126,7 @@
         .t-ok { background: #10b981; } .t-err { background: #ef4444; } .t-warn { background: #f59e0b; } .t-loading { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* Style Giao Diện Phân Khối Mới - ĐÃ SỬA SẠCH SẼ */
+        /* Style Giao Diện Phân Khối */
         .grade-section { margin-bottom: 40px; }
         .grade-title { 
             font-size: 18px; font-weight: 800; color: var(--primary); 
@@ -251,11 +251,24 @@
         
         <div id="teaRaDeArea">
             <div id="tInput" style="background:white; padding:24px; border-radius:8px; border:1px solid var(--border);">
-                <div class="form-group" style="background:#fffbeb; padding:15px; border-radius:8px; border:1px solid #fde68a;">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin:0;">
-                        <input type="checkbox" id="tIsTN" style="width:20px; height:20px;" checked> 
-                        <span style="color:#d97706; font-weight:800; font-size:15px;"><i class="fa-solid fa-star"></i> Cấu trúc Đề thi Tốt nghiệp THPT 2025</span>
-                    </label>
+                <div class="form-group" style="background:#eef2ff; padding:15px; border-radius:8px; border:1px solid #c7d2fe;">
+                    <label style="color:var(--primary); font-size:16px;"><i class="fa-solid fa-robot"></i> Cấu Hình Trí Tuệ Nhân Tạo:</label>
+                    
+                    <div style="display:flex; gap:30px; margin-top:12px; margin-bottom: 15px;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <input type="radio" name="tAiMode" value="generate" style="width:20px; height:20px;" checked> 
+                            <span><b>Sáng tác đề:</b> Đọc sách/tài liệu và tự soạn bộ đề mới.</span>
+                        </label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <input type="radio" name="tAiMode" value="extract" style="width:20px; height:20px;"> 
+                            <span style="color:var(--danger);"><b>Quét đề có sẵn (Azota):</b> Trích xuất nguyên bản từ file.</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <label style="font-size:13px; color:#475569;"><i class="fa-solid fa-terminal"></i> Lệnh AI tùy chỉnh (Ví dụ: Soạn 5 câu khó, tập trung chương 2...)</label>
+                        <textarea id="tCustomPrompt" rows="2" placeholder="Nhập yêu cầu đặc biệt vào đây (Không bắt buộc)..." style="font-size:14px; margin-top:5px; border-color:#a5b4fc;"></textarea>
+                    </div>
                 </div>
                 
                 <div style="display:flex; gap:15px;">
@@ -293,12 +306,24 @@
                         <button class="btn-outline" style="border-color:#cbd5e1; color:#64748b; padding:8px 12px; font-size:13px;" onclick="resetUploader()"><i class="fa-solid fa-xmark"></i> Xóa</button>
                     </div>
                 </div>
-                <button onclick="reqAI()" style="font-size:16px; padding:16px; width:100%;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI ĐỌC DỮ LIỆU & TẠO SƠ ĐỒ, ĐỀ THI</button>
+                
+                <div style="display:flex; gap:15px; margin-top:20px;">
+                    <button onclick="reqAI()" style="font-size:16px; padding:16px; flex:2;"><i class="fa-solid fa-wand-magic-sparkles"></i> GIAO CHO AI XỬ LÝ DỮ LIỆU ĐỂ TẠO ĐỀ</button>
+                    <button class="btn-outline" onclick="manualCreate()" style="font-size:15px; padding:16px; flex:1;"><i class="fa-solid fa-pen-nib"></i> BỎ QUA AI, SOẠN THỦ CÔNG</button>
+                </div>
             </div>
             
             <div id="tReview" class="hidden" style="border:1px solid var(--primary); border-radius:8px; padding:24px; margin-top:24px;">
                 <h3 style="color:var(--primary); margin-top:0;"><i class="fa-solid fa-list-check"></i> THẨM ĐỊNH VÀ PHÊ DUYỆT</h3>
+                
                 <div id="qDrafts"></div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px; padding:15px; background:var(--bg-light); border-radius:8px; border:1px dashed #cbd5e1;">
+                    <span style="font-weight:700; color:var(--secondary); align-self:center; margin-right:10px;">Thêm thủ công:</span>
+                    <button class="btn-outline" onclick="addManualQuestion('nhiều lựa chọn')" style="padding:8px 16px; font-size:13px;"><i class="fa-solid fa-plus"></i> Câu Trắc Nghiệm</button>
+                    <button class="btn-outline" onclick="addManualQuestion('đúng sai')" style="padding:8px 16px; font-size:13px;"><i class="fa-solid fa-plus"></i> Câu Đúng / Sai</button>
+                </div>
+
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
                     <button class="btn-success" onclick="pubExam()" style="flex:2;"><i class="fa-solid fa-paper-plane"></i> CHỐT ĐỀ & LƯU LÊN BẢNG TIN</button>
                     <button class="btn-outline" onclick="cancelDraft()" style="flex:1; color:var(--danger); border-color:var(--border);"><i class="fa-solid fa-xmark"></i> Hủy / Quay lại</button>
@@ -824,18 +849,61 @@
         $('publishedExamsList').innerHTML = h;
     };
 
+    // NÚT SOẠN ĐỀ THỦ CÔNG (Bỏ qua AI)
+    window.manualCreate = () => {
+        if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
+        
+        drafts = { mindmap: "# Nhập Tên Chủ Đề Ở Đây\n- Ý chính 1\n  - Nhánh nhỏ 1\n- Ý chính 2", exam: [] }; 
+        editingExamId = null; 
+        
+        switchTeaTab('rade');
+        renderDraft();
+        toast("Đã chuyển sang chế độ Tự gõ đề thủ công!", "success");
+    };
+
+    // TÍNH NĂNG THÊM CÂU HỎI THỦ CÔNG
+    window.addManualQuestion = (type) => {
+        if (!drafts.exam) drafts.exam = [];
+        
+        if (type === 'nhiều lựa chọn') {
+            drafts.exam.push({
+                type: "nhiều lựa chọn",
+                questionText: "Nhập nội dung câu hỏi trắc nghiệm mới vào đây?",
+                options: ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
+                correctAnswer: "A"
+            });
+        } else if (type === 'đúng sai') {
+            drafts.exam.push({
+                type: "đúng sai",
+                questionText: "Nhập nội dung câu hỏi Đúng/Sai mới vào đây?",
+                subOptions: ["Mệnh đề 1", "Mệnh đề 2", "Mệnh đề 3", "Mệnh đề 4"],
+                correctAnswers: ["D", "S", "D", "S"]
+            });
+        }
+        
+        renderDraft();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    };
+
     const reqAI = async () => { 
         if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
         if (!currentFileBase64 && !currentExtractedText) return toast("Sếp ơi, nạp tài liệu vào hộp trước đã!", "warn");
 
         toast("Đang nén và phóng dữ liệu qua Cloud AI...", "loading"); 
-        const isTN = $('tIsTN').checked;
+        
+        const aiMode = document.querySelector('input[name="tAiMode"]:checked').value;
+        let finalCustomPrompt = $('tCustomPrompt').value;
+
+        // CÀI ĐẶT LỆNH ÉP CUNG THEO CHẾ ĐỘ AZOTA
+        if(aiMode === 'extract') {
+            finalCustomPrompt = "ĐÂY LÀ MỘT ĐỀ THI CÓ SẴN. Yêu cầu: TRÍCH XUẤT CHÍNH XÁC từng câu hỏi, các đáp án A, B, C, D từ văn bản. KHÔNG ĐƯỢC TỰ BỊA THÊM HAY CẮT BỚT. Nếu đề có đáp án thì ghi nhận, chưa có thì tự giải. Sơ đồ tư duy hãy tự tóm tắt chủ đề của đề thi này. " + finalCustomPrompt;
+        }
 
         let payload = {
-            isTN: isTN,
             documentText: currentExtractedText, 
             fileBase64: currentFileBase64, 
-            fileMimeType: currentFileBase64 ? currentMimeType : null
+            fileMimeType: currentFileBase64 ? currentMimeType : null,
+            customPrompt: finalCustomPrompt
         };
 
         try { 
@@ -862,7 +930,7 @@
         if(!ex) return;
         drafts = { mindmap: ex.mindmap || "", exam: ex.questions }; 
         $('tClass').value = ex.targetClass;
-        $('tCategory').value = ex.category || ''; // Đưa dữ liệu cũ vào ô
+        $('tCategory').value = ex.category || ''; 
         $('tWeek').value = ex.topic;
         editingExamId = id; 
         
@@ -903,7 +971,7 @@
         `;
 
         questionsList.forEach((q, i) => { 
-            html += `<div class="q-card" id="qd-${i}"><button onclick="$('qd-${i}').remove()" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px;"><i class="fa-solid fa-trash"></i></button><p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p><textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${q.questionText}</textarea>`; 
+            html += `<div class="q-card" id="qd-${i}"><button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px;"><i class="fa-solid fa-trash"></i></button><p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p><textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${q.questionText}</textarea>`; 
             if(q.type==='nhiều lựa chọn') { 
                 html+=`<div style="margin-top:12px;">`; 
                 q.options.forEach((o,j) => html+=`<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${o}" style="flex:1; padding:8px;"></div>`); 
@@ -920,6 +988,32 @@
         setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
     };
 
+    // Hàm xóa câu hỏi cho nút thùng rác bên trong mảng Drafts
+    window.removeQuestion = (index) => {
+        if(confirm("Xóa câu hỏi này?")) {
+            saveCurrentDraftValues();
+            drafts.exam.splice(index, 1);
+            renderDraft();
+        }
+    };
+
+    // Hàm lưu lại các giá trị đang gõ lỡ dở trên form trước khi Render lại (để không bị mất chữ khi bấm thêm câu hỏi)
+    const saveCurrentDraftValues = () => {
+        drafts.mindmap = $('editMindmap').value;
+        const questionsList = drafts.exam || [];
+        questionsList.forEach((q, i) => {
+            if(!$(`qd-${i}`)) return;
+            q.questionText = $(`eq-${i}`).value;
+            if(q.type==='nhiều lựa chọn') {
+                q.options = [$(`eo-${i}-0`).value,$(`eo-${i}-1`).value,$(`eo-${i}-2`).value,$(`eo-${i}-3`).value];
+                q.correctAnswer = $(`ek-${i}`).value.trim().toUpperCase();
+            } else if(q.type==='đúng sai') {
+                q.subOptions = [$(`es-${i}-0`).value,$(`es-${i}-1`).value,$(`es-${i}-2`).value,$(`es-${i}-3`).value];
+                q.correctAnswers = [$(`ekd-${i}-0`).value,$(`ekd-${i}-1`).value,$(`ekd-${i}-2`).value,$(`ekd-${i}-3`).value];
+            }
+        });
+    };
+
     const cancelDraft = () => { 
         $('tReview').style.display='none'; 
         $('tInput').style.display='block'; 
@@ -927,24 +1021,14 @@
     };
 
     const pubExam = () => { 
-        let fQs = []; 
-        const questionsList = drafts.exam || [];
+        saveCurrentDraftValues(); // Ép lưu tất cả các ô input hiện tại
         
-        questionsList.forEach((q, i) => { 
-            if(!$(`qd-${i}`)) return; 
-            let nQ = { type: q.type, questionText: $(`eq-${i}`).value }; 
-            if(q.type==='nhiều lựa chọn') { 
-                nQ.options=[$(`eo-${i}-0`).value,$(`eo-${i}-1`).value,$(`eo-${i}-2`).value,$(`eo-${i}-3`).value]; 
-                nQ.correctAnswer=$(`ek-${i}`).value.trim().toUpperCase(); 
-            } else if(q.type==='đúng sai') { 
-                nQ.subOptions=[$(`es-${i}-0`).value,$(`es-${i}-1`).value,$(`es-${i}-2`).value,$(`es-${i}-3`).value]; 
-                nQ.correctAnswers=[$(`ekd-${i}-0`).value,$(`ekd-${i}-1`).value,$(`ekd-${i}-2`).value,$(`ekd-${i}-3`).value]; 
-            } 
-            fQs.push(nQ); 
-        }); 
+        let fQs = drafts.exam; 
+        const finalMindmap = drafts.mindmap;
+        const examCategory = $('tCategory').value || 'Không phân loại'; 
         
-        const finalMindmap = $('editMindmap').value;
-        const examCategory = $('tCategory').value || 'Không phân loại'; // Lấy dữ liệu mục Chuyên mục
+        // Lưu thời gian tạo đề để xử lý Logic Học sinh mới chuyển trường
+        const createTime = Date.now();
 
         if (editingExamId) {
             const index = examsDB.findIndex(e => e.id === editingExamId);
@@ -954,10 +1038,21 @@
                 examsDB[index].topic = $('tWeek').value;
                 examsDB[index].mindmap = finalMindmap;
                 examsDB[index].questions = fQs;
+                // Khi edit thì KHÔNG đổi createdAt để không ảnh hưởng học sinh cũ
             }
             toast("Đã cập nhật lại Đề thi & Sơ đồ!", "success"); 
         } else {
-            examsDB.push({ id: "ex_"+Date.now(), targetClass: $('tClass').value, category: examCategory, subject: session.teachingSubject, topic: $('tWeek').value, mindmap: finalMindmap, questions: fQs, teacherName: session.fullname }); 
+            examsDB.push({ 
+                id: "ex_"+Date.now(), 
+                targetClass: $('tClass').value, 
+                category: examCategory, 
+                subject: session.teachingSubject, 
+                topic: $('tWeek').value, 
+                mindmap: finalMindmap, 
+                questions: fQs, 
+                teacherName: session.fullname,
+                createdAt: createTime // Đóng dấu thời gian ra đời của bài kiểm tra
+            }); 
             toast("Đã công bố Đề thi & Sơ đồ lên bảng tin!", "success"); 
         }
 
@@ -998,7 +1093,6 @@
         $('reviewModal').style.display = 'flex';
     };
 
-    // TÍNH NĂNG MỚI: XÓA BÀI LÀM CỦA HỌC SINH
     window.deleteScore = (scoreIndex) => {
         if(!confirm("Sếp có chắc chắn muốn xóa bài làm này của học sinh? Dữ liệu điểm sẽ bị bay màu vĩnh viễn!")) return;
         
@@ -1023,7 +1117,6 @@
         
         let h = `<table><tr><th>Tên Bài</th><th>Số lần - Thời gian</th><th>Học sinh</th><th>Điểm</th><th>Thao tác</th></tr>`; 
         myScores.reverse().forEach((s, originalIndexInReversed) => { 
-            // Cần lấy đúng Index thật trong mảng gốc scoresDB để xóa cho chuẩn
             const trueIndex = scoresDB.indexOf(s);
             h += `<tr>
                     <td><b>${s.topic}</b><br><small style="color:var(--text-muted);">${s.studentClass}</small></td>
@@ -1119,7 +1212,6 @@
         loadExams();
     };
 
-    // HÀM HIỂN THỊ CÂY THƯ MỤC CHƯƠNG ĐỘNG (ĐÃ SỬA SẠCH GIAO DIỆN)
     const loadExams = () => { 
         const myGrade = session.studentClass.substring(0, 2); 
         const selectedSubj = $('sFilterSubj').value; 
@@ -1158,7 +1250,6 @@
                     <span>${badgeText}</span>
                 </div>`;
 
-            // Gom nhóm bài tập theo Chuyên mục TỰ DO do giáo viên tự gõ
             let examsByCat = {};
             gradeExams.forEach(e => {
                 let cat = e.category || 'Không phân loại';
@@ -1166,10 +1257,12 @@
                 examsByCat[cat].push(e);
             });
 
-            // Biến duy trì trạng thái Khóa nối tiếp nhau qua các chương
+            // THUẬT TOÁN SO SÁNH THỜI GIAN "HỌC SINH MỚI CHUYỂN TRƯỜNG"
+            // Lấy thời gian đăng ký của tài khoản học sinh đang đăng nhập
+            const studentEnrollTime = session.createdAt || 0; 
+            
             let previousPassed = true;
 
-            // Tự động sắp xếp các Category: Tên chương theo bảng chữ cái, còn chứa chữ "Kiểm tra" / "Kì" thì đẩy xuống dưới
             let availableCats = Object.keys(examsByCat).sort((a,b) => {
                 let isTestA = a.toLowerCase().includes('kiểm tra') || a.toLowerCase().includes('giữa kì') || a.toLowerCase().includes('học kì');
                 let isTestB = b.toLowerCase().includes('kiểm tra') || b.toLowerCase().includes('giữa kì') || b.toLowerCase().includes('học kì');
@@ -1178,14 +1271,12 @@
                 return a.localeCompare(b);
             });
 
-            // Render theo thứ tự động
             availableCats.forEach(cat => {
                 if(examsByCat[cat] && examsByCat[cat].length > 0) {
                     
                     let catIcon = (cat.toLowerCase().includes('kiểm tra') || cat.toLowerCase().includes('kì')) ? 'fa-solid fa-file-signature' : 'fa-solid fa-folder-open';
                     let catColor = (cat.toLowerCase().includes('kiểm tra') || cat.toLowerCase().includes('kì')) ? '#ef4444' : '#8b5cf6';
                     
-                    // BỌC TẤT CẢ BÀI CỦA 1 CHƯƠNG VÀO TRONG HỘP TRẮNG (BOX)
                     blockHtml += `<div class="chapter-box">
                                     <div class="chapter-header" style="color: ${catColor};"><i class="${catIcon}"></i> ${cat}</div>`;
                     
@@ -1193,8 +1284,13 @@
                         const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username);
                         const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10);
 
+                        // KIỂM TRA ĐỀ CŨ HAY ĐỀ MỚI SO VỚI TÀI KHOẢN
+                        const examCreateTime = e.createdAt || 0; // Những đề hồi xưa tạo chưa có createdAt thì lấy bằng 0
+                        const isLegacyExam = examCreateTime < studentEnrollTime; // Đề tạo TRƯỚC khi học sinh vào trường
+
                         let btnHtm = '';
-                        let isLocked = !isReview && !previousPassed;
+                        // Luật Khóa: Nếu đang ở Khu Vực Học Mới (!isReview), VÀ đề này là Đề Mới Giao Gần Đây (!isLegacyExam), VÀ Bài trước chưa full 10 (!previousPassed) -> KHÓA!
+                        let isLocked = !isReview && !isLegacyExam && !previousPassed;
 
                         if(isLocked) {
                             btnHtm = `<button class="game-btn game-btn-disabled" disabled><i class="fa-solid fa-lock"></i> HOÀN THÀNH BÀI TRƯỚC</button>`;
@@ -1206,14 +1302,18 @@
                             }
                         }
 
-                        blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
+                        // Nếu là Legacy Exam (đề cũ hơn cả lúc HS vào trường) thì đắp thêm cái huy hiệu thông báo
+                        const legacyBadge = isLegacyExam && !isReview ? `<span style="margin-left:8px; font-size:11px; background:#dcfce7; color:#166534; padding:2px 8px; border-radius:10px;"><i class="fa-solid fa-unlock-keyhole"></i> Đã mở khóa (Học sinh mới)</span>` : ``;
+
+                        blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic} ${legacyBadge}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
                         
-                        if (!isReview) {
+                        // Chỉ những đề MỚI mới ảnh hưởng đến chuỗi khóa tuần tự của học sinh
+                        if (!isReview && !isLegacyExam) {
                             previousPassed = isDonePerfect; 
                         }
                     });
                     
-                    blockHtml += `</div>`; // Đóng hộp trắng của chương
+                    blockHtml += `</div>`; 
                 }
             });
 
