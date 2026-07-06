@@ -126,12 +126,26 @@
         .t-ok { background: #10b981; } .t-err { background: #ef4444; } .t-warn { background: #f59e0b; } .t-loading { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* Style riêng cho các khu vực Khối Lớp */
+        /* Style riêng cho các khu vực Khối Lớp - Bản Nâng Cấp Hết Phèn */
         .grade-section { margin-bottom: 40px; }
-        .grade-title { font-size: 20px; font-weight: 800; color: var(--primary); border-bottom: 2px solid #e0e7ff; padding-bottom: 12px; margin-bottom: 20px; display:flex; align-items:center; gap:10px; }
-        .grade-title span { background: #e0e7ff; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; }
-        .grade-title.review { color: #10b981; border-color: #d1fae5; }
-        .grade-title.review span { background: #d1fae5; color: #10b981; }
+        .grade-title { 
+            font-size: 18px; font-weight: 800; color: var(--primary); 
+            background: #eef2ff; padding: 16px 24px; border-radius: 12px; 
+            margin-bottom: 24px; display:flex; align-items:center; justify-content: space-between; 
+            border: 1px solid #c7d2fe; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .grade-title .gt-left { display:flex; align-items:center; gap:10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .grade-title span { 
+            background: white; color: var(--primary); padding: 6px 16px; 
+            border-radius: 8px; font-size: 13px; font-weight: 700; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e0e7ff;
+        }
+        .grade-title.review { 
+            background: #ecfdf5; color: #059669; border-color: #a7f3d0; 
+        }
+        .grade-title.review span { 
+            color: #059669; border-color: #d1fae5;
+        }
     </style>
 </head>
 <body>
@@ -1072,7 +1086,6 @@
         loadExams();
     };
 
-    // THUẬT TOÁN HIỂN THỊ VÀ PHÂN CHIA KHỐI LỚP SIÊU CHUẨN
     const loadExams = () => { 
         const myGrade = session.studentClass.substring(0, 2); 
         const selectedSubj = $('sFilterSubj').value; 
@@ -1092,24 +1105,24 @@
 
         if(es.length===0) return $('eCont').innerHTML = `<div style="text-align:center; padding:40px; background:white; border-radius:16px; color:#94a3b8;"><i class="fa-solid fa-mug-hot" style="font-size:36px; margin-bottom:15px; color:#cbd5e1;"></i><br><b style="font-size:16px;">Tuyệt vời, bạn không có nhiệm vụ tồn đọng môn này!</b></div>`; 
 
-        // Phân loại bài tập theo Khối
         let exams10 = es.filter(e => e.targetClass.startsWith('10'));
         let exams11 = es.filter(e => e.targetClass.startsWith('11'));
         let exams12 = es.filter(e => e.targetClass.startsWith('12'));
 
         let html = "";
 
-        // Hàm render khu vực riêng cho từng Khối
         const renderGradeBlock = (gradeExams, gradeLabel, isReview) => {
             if(gradeExams.length === 0) return "";
             
-            // Trang trí tiêu đề phân biệt Ôn tập (Mở hết) vs Học mới (Khóa tuần tự)
             let titleClass = isReview ? 'grade-title review' : 'grade-title';
             let titleIcon = isReview ? '<i class="fa-solid fa-rotate-left"></i>' : '<i class="fa-solid fa-book"></i>';
             let badgeText = isReview ? 'Ôn tập kiến thức cũ (Mở khóa toàn bộ)' : 'Chương trình chính (Mở khóa tuần tự)';
             
             let blockHtml = `<div class="grade-section">
-                <h3 class="${titleClass}">${titleIcon} KHỐI ${gradeLabel} <span>${badgeText}</span></h3>`;
+                <div class="${titleClass}">
+                    <div class="gt-left">${titleIcon} KHỐI ${gradeLabel}</div>
+                    <span>${badgeText}</span>
+                </div>`;
 
             let previousPassed = true;
 
@@ -1118,7 +1131,6 @@
                 const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10);
 
                 let btnHtm = '';
-                // Nếu là khu vực Ôn tập thì luôn được mở (bỏ qua previousPassed)
                 let isLocked = !isReview && !previousPassed;
 
                 if(isLocked) {
@@ -1133,7 +1145,6 @@
 
                 blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
                 
-                // Cập nhật điều kiện khóa cho bài tiếp theo (chỉ áp dụng nếu không phải khu vực Ôn tập)
                 if (!isReview) {
                     previousPassed = isDonePerfect; 
                 }
@@ -1142,16 +1153,15 @@
             return blockHtml;
         };
 
-        // Ráp nối các khu vực tùy theo Khối lớp của Học sinh
         if(myGrade === '10') {
             html += renderGradeBlock(exams10, '10', false);
         } else if (myGrade === '11') {
-            html += renderGradeBlock(exams10, '10', true);  // Khối 10 là Ôn tập (Mở toàn bộ)
-            html += renderGradeBlock(exams11, '11', false); // Khối 11 là Học mới (Khóa tuần tự)
+            html += renderGradeBlock(exams10, '10', true);
+            html += renderGradeBlock(exams11, '11', false);
         } else if (myGrade === '12') {
-            html += renderGradeBlock(exams10, '10', true);  // Lớp 12 nhìn thấy khối 10 mở toang
-            html += renderGradeBlock(exams11, '11', true);  // Lớp 12 nhìn thấy khối 11 mở toang
-            html += renderGradeBlock(exams12, '12', false); // Lớp 12 bắt đầu khóa tuần tự ở bài khối 12
+            html += renderGradeBlock(exams10, '10', true);
+            html += renderGradeBlock(exams11, '11', true);
+            html += renderGradeBlock(exams12, '12', false);
         }
 
         $('eCont').innerHTML = html; 
