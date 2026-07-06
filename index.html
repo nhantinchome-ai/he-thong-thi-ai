@@ -96,9 +96,9 @@
         .game-btn-danger:active { transform: translateY(5px); box-shadow: 0 0 0 #dc2626; }
         .game-btn-disabled { background: #e2e8f0; color: #94a3b8; box-shadow: 0 5px 0 #cbd5e1; cursor: not-allowed; }
         
-        .mission-card { background: linear-gradient(135deg, #ffffff, #f0f9ff); border: 2px solid #bae6fd; border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; margin-bottom: 16px; box-shadow: 0 4px 0 #e0f2fe; }
+        .mission-card { background: linear-gradient(135deg, #ffffff, #f0f9ff); border: 2px solid #bae6fd; border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; margin-bottom: 16px; box-shadow: 0 4px 0 #e0f2fe; margin-left: 15px; border-left: 5px solid #38bdf8; }
         .mission-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #bae6fd; border-color: #7dd3fc; }
-        .mission-card.locked { opacity: 0.6; filter: grayscale(100%); pointer-events: none; }
+        .mission-card.locked { opacity: 0.6; filter: grayscale(100%); pointer-events: none; border-left-color: #cbd5e1; }
         
         .progress-bg { background: #e2e8f0; border-radius: 20px; height: 16px; width: 100%; margin-bottom: 25px; overflow: hidden; position: sticky; top: 75px; z-index: 90; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); border: 2px solid white; display:flex; align-items:center; }
         .progress-fill { background: linear-gradient(90deg, #34d399, #10b981); height: 100%; width: 0%; border-radius: 20px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -126,12 +126,12 @@
         .t-ok { background: #10b981; } .t-err { background: #ef4444; } .t-warn { background: #f59e0b; } .t-loading { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* Style riêng cho các khu vực Khối Lớp - Bản Nâng Cấp Hết Phèn */
-        .grade-section { margin-bottom: 40px; }
+        /* Style Giao Diện Phân Khối Mới */
+        .grade-section { margin-bottom: 40px; background: rgba(255,255,255,0.4); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.6); }
         .grade-title { 
             font-size: 18px; font-weight: 800; color: var(--primary); 
             background: #eef2ff; padding: 16px 24px; border-radius: 12px; 
-            margin-bottom: 24px; display:flex; align-items:center; justify-content: space-between; 
+            margin-bottom: 20px; display:flex; align-items:center; justify-content: space-between; 
             border: 1px solid #c7d2fe; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
         .grade-title .gt-left { display:flex; align-items:center; gap:10px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -140,12 +140,15 @@
             border-radius: 8px; font-size: 13px; font-weight: 700; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e0e7ff;
         }
-        .grade-title.review { 
-            background: #ecfdf5; color: #059669; border-color: #a7f3d0; 
+        .grade-title.review { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+        .grade-title.review span { color: #059669; border-color: #d1fae5; }
+        
+        /* Cây thư mục (Chương) */
+        .chapter-header {
+            font-size: 16px; font-weight: 800; color: var(--secondary);
+            margin: 24px 0 12px 10px; display: flex; align-items: center; gap: 8px;
         }
-        .grade-title.review span { 
-            color: #059669; border-color: #d1fae5;
-        }
+        .chapter-header i { color: #8b5cf6; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -257,10 +260,28 @@
                         <span style="color:#d97706; font-weight:800; font-size:15px;"><i class="fa-solid fa-star"></i> Cấu trúc Đề thi Tốt nghiệp THPT 2025</span>
                     </label>
                 </div>
-                <div style="display:flex; gap:20px;">
+                
+                <!-- BỔ SUNG Ô CHỌN CHƯƠNG / GIỮA KÌ / HỌC KÌ -->
+                <div style="display:flex; gap:15px;">
                     <div class="form-group" style="flex:1;"><label>Lớp giao bài:</label><select id="tClass"></select></div>
-                    <div class="form-group" style="flex:2;"><label>Tên chuyên đề:</label><input type="text" id="tWeek" placeholder="VD: Bài 1"></div>
+                    <div class="form-group" style="flex:1.5;">
+                        <label>Phân loại chuyên mục:</label>
+                        <select id="tCategory">
+                            <option value="Chương 1">Chương 1</option>
+                            <option value="Chương 2">Chương 2</option>
+                            <option value="Chương 3">Chương 3</option>
+                            <option value="Chương 4">Chương 4</option>
+                            <option value="Chương 5">Chương 5</option>
+                            <option value="Chương 6">Chương 6</option>
+                            <option value="Chương 7">Chương 7</option>
+                            <option value="Chương 8">Chương 8</option>
+                            <option value="Kiểm tra Giữa kì">Kiểm tra Giữa kì</option>
+                            <option value="Kiểm tra Học kì">Kiểm tra Học kì</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:2;"><label>Tên bài (Tiêu đề):</label><input type="text" id="tWeek" placeholder="VD: Bài 1: Khái quát hệ thống..."></div>
                 </div>
+
                 <div class="form-group">
                     <label>Nạp học liệu gốc (Chấp nhận Ảnh, PDF, Word, PowerPoint dạng kéo thả):</label>
                     <div id="dropZone" class="drop-zone">
@@ -799,8 +820,9 @@
         let h = "";
         if(myExams.length === 0) h = "<p style='color:#94a3b8; font-size:14px; grid-column: span 2;'>Chưa có đề nào được giao.</p>";
         myExams.reverse().forEach(e => {
+            let badgeCat = e.category ? `<span class="badge" style="background:#f1f5f9; color:#475569; margin-left:8px; font-size:11px;">${e.category}</span>` : "";
             h += `<div style="border:1px solid #cbd5e1; border-radius:8px; padding:15px; background:white; display:flex; justify-content:space-between; align-items:center;">
-                    <div><b style="color:var(--primary);">${e.topic}</b><br><small style="color:#64748b;">Lớp: ${e.targetClass} | Gồm: Sơ đồ + ${e.questions.length} câu</small></div>
+                    <div><b style="color:var(--primary);">${e.topic}</b> ${badgeCat}<br><small style="color:#64748b;">Lớp: ${e.targetClass} | Gồm: Sơ đồ + ${e.questions.length} câu</small></div>
                     <div style="display:flex; gap:8px;">
                         <button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="editPublishedExam('${e.id}')"><i class="fa-solid fa-pen"></i> Sửa</button>
                         <button class="btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePublishedExam('${e.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -848,6 +870,7 @@
         if(!ex) return;
         drafts = { mindmap: ex.mindmap || "", exam: ex.questions }; 
         $('tClass').value = ex.targetClass;
+        $('tCategory').value = ex.category || 'Chương 1';
         $('tWeek').value = ex.topic;
         editingExamId = id; 
         
@@ -929,18 +952,20 @@
         }); 
         
         const finalMindmap = $('editMindmap').value;
+        const examCategory = $('tCategory').value; // Lấy dữ liệu mục Chuyên mục
 
         if (editingExamId) {
             const index = examsDB.findIndex(e => e.id === editingExamId);
             if(index !== -1) {
                 examsDB[index].targetClass = $('tClass').value;
+                examsDB[index].category = examCategory;
                 examsDB[index].topic = $('tWeek').value;
                 examsDB[index].mindmap = finalMindmap;
                 examsDB[index].questions = fQs;
             }
             toast("Đã cập nhật lại Đề thi & Sơ đồ!", "success"); 
         } else {
-            examsDB.push({ id: "ex_"+Date.now(), targetClass: $('tClass').value, subject: session.teachingSubject, topic: $('tWeek').value, mindmap: finalMindmap, questions: fQs, teacherName: session.fullname }); 
+            examsDB.push({ id: "ex_"+Date.now(), targetClass: $('tClass').value, category: examCategory, subject: session.teachingSubject, topic: $('tWeek').value, mindmap: finalMindmap, questions: fQs, teacherName: session.fullname }); 
             toast("Đã công bố Đề thi & Sơ đồ lên bảng tin!", "success"); 
         }
 
@@ -1086,6 +1111,7 @@
         loadExams();
     };
 
+    // HÀM HIỂN THỊ CÂY THƯ MỤC CHƯƠNG MỚI
     const loadExams = () => { 
         const myGrade = session.studentClass.substring(0, 2); 
         const selectedSubj = $('sFilterSubj').value; 
@@ -1124,31 +1150,54 @@
                     <span>${badgeText}</span>
                 </div>`;
 
+            // Gom nhóm bài tập theo Chuyên mục (Chương 1, 2... Giữa kì, Học kì)
+            const catOrder = ['Chương 1', 'Chương 2', 'Chương 3', 'Chương 4', 'Chương 5', 'Chương 6', 'Chương 7', 'Chương 8', 'Kiểm tra Giữa kì', 'Kiểm tra Học kì'];
+            let examsByCat = {};
+            gradeExams.forEach(e => {
+                let cat = e.category || 'Chương 1'; // Nếu đề cũ không có mục, mặc định ném vào Chương 1
+                if(!examsByCat[cat]) examsByCat[cat] = [];
+                examsByCat[cat].push(e);
+            });
+
+            // Biến duy trì trạng thái Khóa nối tiếp nhau qua các chương
             let previousPassed = true;
 
-            gradeExams.forEach(e => {
-                const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username);
-                const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10);
+            // Render theo thứ tự chuẩn
+            catOrder.forEach(cat => {
+                if(examsByCat[cat] && examsByCat[cat].length > 0) {
+                    
+                    // In tiêu đề của thư mục Chương
+                    let catIcon = cat.includes('Kiểm tra') ? 'fa-solid fa-file-signature' : 'fa-solid fa-folder-open';
+                    let catColor = cat.includes('Kiểm tra') ? '#ef4444' : '#8b5cf6';
+                    blockHtml += `<div class="chapter-header" style="color: ${catColor};"><i class="${catIcon}"></i> ${cat}</div>`;
+                    
+                    examsByCat[cat].forEach(e => {
+                        const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username);
+                        const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10);
 
-                let btnHtm = '';
-                let isLocked = !isReview && !previousPassed;
+                        let btnHtm = '';
+                        let isLocked = !isReview && !previousPassed;
 
-                if(isLocked) {
-                    btnHtm = `<button class="game-btn game-btn-disabled" disabled><i class="fa-solid fa-lock"></i> HOÀN THÀNH BÀI TRƯỚC</button>`;
-                } else {
-                    if(isDonePerfect) {
-                        btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')" style="background:#10b981; box-shadow: 0 5px 0 #059669;"><i class="fa-solid fa-check-double"></i> ÔN TẬP LẠI</button>`; 
-                    } else {
-                        btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')"><i class="fa-solid fa-play"></i> LÀM BÀI LẦN ${attempts.length + 1}</button>`; 
-                    }
-                }
+                        if(isLocked) {
+                            btnHtm = `<button class="game-btn game-btn-disabled" disabled><i class="fa-solid fa-lock"></i> HOÀN THÀNH BÀI TRƯỚC</button>`;
+                        } else {
+                            if(isDonePerfect) {
+                                btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')" style="background:#10b981; box-shadow: 0 5px 0 #059669;"><i class="fa-solid fa-check-double"></i> ÔN TẬP LẠI</button>`; 
+                            } else {
+                                btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')"><i class="fa-solid fa-play"></i> LÀM BÀI LẦN ${attempts.length + 1}</button>`; 
+                            }
+                        }
 
-                blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
-                
-                if (!isReview) {
-                    previousPassed = isDonePerfect; 
+                        // mission-card đã được thụt vào (margin-left: 15px) trong CSS
+                        blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
+                        
+                        if (!isReview) {
+                            previousPassed = isDonePerfect; 
+                        }
+                    });
                 }
             });
+
             blockHtml += `</div>`;
             return blockHtml;
         };
