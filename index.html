@@ -96,7 +96,7 @@
         .game-btn-danger:active { transform: translateY(5px); box-shadow: 0 0 0 #dc2626; }
         .game-btn-disabled { background: #e2e8f0; color: #94a3b8; box-shadow: 0 5px 0 #cbd5e1; cursor: not-allowed; }
         
-        .mission-card { background: linear-gradient(135deg, #ffffff, #f0f9ff); border: 2px solid #bae6fd; border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; margin-bottom: 16px; box-shadow: 0 4px 0 #e0f2fe; margin-left: 15px; border-left: 5px solid #38bdf8; }
+        .mission-card { background: linear-gradient(135deg, #ffffff, #f0f9ff); border: 2px solid #bae6fd; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; margin-bottom: 12px; box-shadow: 0 4px 0 #e0f2fe; border-left: 6px solid #38bdf8; }
         .mission-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #bae6fd; border-color: #7dd3fc; }
         .mission-card.locked { opacity: 0.6; filter: grayscale(100%); pointer-events: none; border-left-color: #cbd5e1; }
         
@@ -126,8 +126,8 @@
         .t-ok { background: #10b981; } .t-err { background: #ef4444; } .t-warn { background: #f59e0b; } .t-loading { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* Style Giao Diện Phân Khối Mới */
-        .grade-section { margin-bottom: 40px; background: rgba(255,255,255,0.4); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.6); }
+        /* Style Giao Diện Phân Khối Mới - ĐÃ SỬA SẠCH SẼ */
+        .grade-section { margin-bottom: 40px; }
         .grade-title { 
             font-size: 18px; font-weight: 800; color: var(--primary); 
             background: #eef2ff; padding: 16px 24px; border-radius: 12px; 
@@ -143,12 +143,9 @@
         .grade-title.review { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
         .grade-title.review span { color: #059669; border-color: #d1fae5; }
         
-        /* Cây thư mục (Chương) */
-        .chapter-header {
-            font-size: 16px; font-weight: 800; color: var(--secondary);
-            margin: 24px 0 12px 10px; display: flex; align-items: center; gap: 8px;
-        }
-        .chapter-header i { color: #8b5cf6; font-size: 18px; }
+        .chapter-box { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .chapter-header { font-size: 16px; font-weight: 800; color: var(--secondary); margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .chapter-header i { font-size: 18px; }
     </style>
 </head>
 <body>
@@ -261,23 +258,18 @@
                     </label>
                 </div>
                 
-                <!-- BỔ SUNG Ô CHỌN CHƯƠNG / GIỮA KÌ / HỌC KÌ -->
                 <div style="display:flex; gap:15px;">
                     <div class="form-group" style="flex:1;"><label>Lớp giao bài:</label><select id="tClass"></select></div>
                     <div class="form-group" style="flex:1.5;">
-                        <label>Phân loại chuyên mục:</label>
-                        <select id="tCategory">
-                            <option value="Chương 1">Chương 1</option>
-                            <option value="Chương 2">Chương 2</option>
-                            <option value="Chương 3">Chương 3</option>
-                            <option value="Chương 4">Chương 4</option>
-                            <option value="Chương 5">Chương 5</option>
-                            <option value="Chương 6">Chương 6</option>
-                            <option value="Chương 7">Chương 7</option>
-                            <option value="Chương 8">Chương 8</option>
-                            <option value="Kiểm tra Giữa kì">Kiểm tra Giữa kì</option>
-                            <option value="Kiểm tra Học kì">Kiểm tra Học kì</option>
-                        </select>
+                        <label>Phân loại chuyên mục (Nhập tự do hoặc chọn):</label>
+                        <input type="text" id="tCategory" list="catHints" placeholder="VD: Chương 1, Giữa kì, Chuyên đề...">
+                        <datalist id="catHints">
+                            <option value="Chương 1"></option>
+                            <option value="Chương 2"></option>
+                            <option value="Chương 3"></option>
+                            <option value="Kiểm tra Giữa kì"></option>
+                            <option value="Kiểm tra Học kì"></option>
+                        </datalist>
                     </div>
                     <div class="form-group" style="flex:2;"><label>Tên bài (Tiêu đề):</label><input type="text" id="tWeek" placeholder="VD: Bài 1: Khái quát hệ thống..."></div>
                 </div>
@@ -870,7 +862,7 @@
         if(!ex) return;
         drafts = { mindmap: ex.mindmap || "", exam: ex.questions }; 
         $('tClass').value = ex.targetClass;
-        $('tCategory').value = ex.category || 'Chương 1';
+        $('tCategory').value = ex.category || ''; // Đưa dữ liệu cũ vào ô
         $('tWeek').value = ex.topic;
         editingExamId = id; 
         
@@ -952,7 +944,7 @@
         }); 
         
         const finalMindmap = $('editMindmap').value;
-        const examCategory = $('tCategory').value; // Lấy dữ liệu mục Chuyên mục
+        const examCategory = $('tCategory').value || 'Không phân loại'; // Lấy dữ liệu mục Chuyên mục
 
         if (editingExamId) {
             const index = examsDB.findIndex(e => e.id === editingExamId);
@@ -1006,6 +998,16 @@
         $('reviewModal').style.display = 'flex';
     };
 
+    // TÍNH NĂNG MỚI: XÓA BÀI LÀM CỦA HỌC SINH
+    window.deleteScore = (scoreIndex) => {
+        if(!confirm("Sếp có chắc chắn muốn xóa bài làm này của học sinh? Dữ liệu điểm sẽ bị bay màu vĩnh viễn!")) return;
+        
+        scoresDB.splice(scoreIndex, 1);
+        saveLocal();
+        renderScores();
+        toast("Đã tiễn bài làm này về hư vô!", "success");
+    };
+
     const renderScores = () => { 
         const clsFilter = $('filterClass').value; 
         const exFilter = $('filterExam').value; 
@@ -1019,15 +1021,21 @@
             return; 
         } 
         
-        let h = `<table><tr><th>Tên Bài</th><th>Số lần - Thời gian</th><th>Học sinh</th><th>Điểm</th><th>Chi tiết</th></tr>`; 
+        let h = `<table><tr><th>Tên Bài</th><th>Số lần - Thời gian</th><th>Học sinh</th><th>Điểm</th><th>Thao tác</th></tr>`; 
         myScores.reverse().forEach((s, originalIndexInReversed) => { 
+            // Cần lấy đúng Index thật trong mảng gốc scoresDB để xóa cho chuẩn
             const trueIndex = scoresDB.indexOf(s);
             h += `<tr>
                     <td><b>${s.topic}</b><br><small style="color:var(--text-muted);">${s.studentClass}</small></td>
                     <td>Lần ${s.attempt} <br><span style="color:var(--text-muted); font-size:12px;"><i class="fa-regular fa-clock"></i> ${s.time}</span></td>
                     <td><b style="color:var(--secondary);">${s.studentName}</b></td>
                     <td><b style="color:var(--danger); font-size:16px;">${s.score}</b></td>
-                    <td><button class="btn-outline" style="padding:4px 8px; font-size:12px;" onclick="viewStudentDetails(${trueIndex})">Xem</button></td>
+                    <td>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-outline" style="padding:4px 8px; font-size:12px;" onclick="viewStudentDetails(${trueIndex})">Xem</button>
+                            <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteScore(${trueIndex})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
                   </tr>`; 
         }); 
         h += `</table>`; 
@@ -1111,7 +1119,7 @@
         loadExams();
     };
 
-    // HÀM HIỂN THỊ CÂY THƯ MỤC CHƯƠNG MỚI
+    // HÀM HIỂN THỊ CÂY THƯ MỤC CHƯƠNG ĐỘNG (ĐÃ SỬA SẠCH GIAO DIỆN)
     const loadExams = () => { 
         const myGrade = session.studentClass.substring(0, 2); 
         const selectedSubj = $('sFilterSubj').value; 
@@ -1150,11 +1158,10 @@
                     <span>${badgeText}</span>
                 </div>`;
 
-            // Gom nhóm bài tập theo Chuyên mục (Chương 1, 2... Giữa kì, Học kì)
-            const catOrder = ['Chương 1', 'Chương 2', 'Chương 3', 'Chương 4', 'Chương 5', 'Chương 6', 'Chương 7', 'Chương 8', 'Kiểm tra Giữa kì', 'Kiểm tra Học kì'];
+            // Gom nhóm bài tập theo Chuyên mục TỰ DO do giáo viên tự gõ
             let examsByCat = {};
             gradeExams.forEach(e => {
-                let cat = e.category || 'Chương 1'; // Nếu đề cũ không có mục, mặc định ném vào Chương 1
+                let cat = e.category || 'Không phân loại';
                 if(!examsByCat[cat]) examsByCat[cat] = [];
                 examsByCat[cat].push(e);
             });
@@ -1162,14 +1169,25 @@
             // Biến duy trì trạng thái Khóa nối tiếp nhau qua các chương
             let previousPassed = true;
 
-            // Render theo thứ tự chuẩn
-            catOrder.forEach(cat => {
+            // Tự động sắp xếp các Category: Tên chương theo bảng chữ cái, còn chứa chữ "Kiểm tra" / "Kì" thì đẩy xuống dưới
+            let availableCats = Object.keys(examsByCat).sort((a,b) => {
+                let isTestA = a.toLowerCase().includes('kiểm tra') || a.toLowerCase().includes('giữa kì') || a.toLowerCase().includes('học kì');
+                let isTestB = b.toLowerCase().includes('kiểm tra') || b.toLowerCase().includes('giữa kì') || b.toLowerCase().includes('học kì');
+                if(isTestA && !isTestB) return 1;
+                if(!isTestA && isTestB) return -1;
+                return a.localeCompare(b);
+            });
+
+            // Render theo thứ tự động
+            availableCats.forEach(cat => {
                 if(examsByCat[cat] && examsByCat[cat].length > 0) {
                     
-                    // In tiêu đề của thư mục Chương
-                    let catIcon = cat.includes('Kiểm tra') ? 'fa-solid fa-file-signature' : 'fa-solid fa-folder-open';
-                    let catColor = cat.includes('Kiểm tra') ? '#ef4444' : '#8b5cf6';
-                    blockHtml += `<div class="chapter-header" style="color: ${catColor};"><i class="${catIcon}"></i> ${cat}</div>`;
+                    let catIcon = (cat.toLowerCase().includes('kiểm tra') || cat.toLowerCase().includes('kì')) ? 'fa-solid fa-file-signature' : 'fa-solid fa-folder-open';
+                    let catColor = (cat.toLowerCase().includes('kiểm tra') || cat.toLowerCase().includes('kì')) ? '#ef4444' : '#8b5cf6';
+                    
+                    // BỌC TẤT CẢ BÀI CỦA 1 CHƯƠNG VÀO TRONG HỘP TRẮNG (BOX)
+                    blockHtml += `<div class="chapter-box">
+                                    <div class="chapter-header" style="color: ${catColor};"><i class="${catIcon}"></i> ${cat}</div>`;
                     
                     examsByCat[cat].forEach(e => {
                         const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username);
@@ -1188,13 +1206,14 @@
                             }
                         }
 
-                        // mission-card đã được thụt vào (margin-left: 15px) trong CSS
                         blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
                         
                         if (!isReview) {
                             previousPassed = isDonePerfect; 
                         }
                     });
+                    
+                    blockHtml += `</div>`; // Đóng hộp trắng của chương
                 }
             });
 
