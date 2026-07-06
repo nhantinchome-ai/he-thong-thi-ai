@@ -42,14 +42,15 @@ const userSchema = new mongoose.Schema({
     studentClass: String,
     homeroomClass: String,
     teachingSubject: String,
-    teachingClasses: String
+    teachingClasses: String,
+    // [QUAN TRỌNG] Gắn mốc thời gian để xử lý logic Học sinh mới chuyển trường
+    createdAt: { type: Number, default: () => Date.now() } 
 });
 const User = mongoose.model('User', userSchema);
 
 // ==========================================
-// 3. NHÂN VIÊN LỄ TÂN ĐÓN BẢO VỆ RAILWAY (QUAN TRỌNG)
+// 3. NHÂN VIÊN LỄ TÂN ĐÓN BẢO VỆ RAILWAY
 // ==========================================
-// Trả lời tín hiệu Ping (Healthcheck) của Railway để không bị rút phích cắm
 app.get('/', (req, res) => {
     res.status(200).send('✅ Máy chủ Backend Khảo Thí AI đang hoạt động mượt mà!');
 });
@@ -59,7 +60,7 @@ app.get('/', (req, res) => {
 // ==========================================
 app.post('/api/dang-ky', async (req, res) => {
     try {
-        const newUser = new User({ ...req.body, role: 'student' });
+        const newUser = new User({ ...req.body, role: 'student', createdAt: Date.now() });
         await newUser.save();
         res.status(201).json({ message: "Đăng ký thành công", data: newUser });
     } catch (error) {
@@ -73,7 +74,7 @@ app.post('/api/dang-nhap', async (req, res) => {
         if (username === 'admin' && password === 'admin') {
             let adminUser = await User.findOne({ username: 'admin' });
             if (!adminUser) {
-                adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin' });
+                adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() });
                 await adminUser.save();
             }
             return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser });
@@ -110,7 +111,7 @@ app.post('/api/admin/xoa-user', async (req, res) => {
 
 app.post('/api/tao-giao-vien', async (req, res) => {
     try {
-        const newTeacher = new User({ ...req.body, role: 'teacher' });
+        const newTeacher = new User({ ...req.body, role: 'teacher', createdAt: Date.now() });
         await newTeacher.save();
         res.status(201).json({ message: "Tạo giáo viên thành công", data: newTeacher });
     } catch (error) {
@@ -119,13 +120,14 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 });
 
 // ==========================================
-// 5. BỘ NÃO AI 2.0 (SƠ ĐỒ TƯ DUY + 10 CÂU CẤU TRÚC BỘ)
+// 5. BỘ NÃO AI 2.0 (LẮNG NGHE LỆNH TÙY CHỈNH)
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
         const documentText = req.body.documentText;
         let fileBase64 = req.body.fileBase64; 
         let fileMimeType = req.body.fileMimeType;
+        const customPrompt = req.body.customPrompt; // Bắt lệnh từ Giáo viên
 
         if (req.file) {
             fileBase64 = req.file.buffer.toString('base64');
@@ -134,9 +136,14 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
         const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
+        // Logic Nhồi lệnh linh hoạt
+        const taskInstruction = customPrompt && customPrompt.trim() !== "" 
+            ? `\n2. YÊU CẦU ĐẶC BIỆT TỪ GIÁO VIÊN (Bắt buộc phải ra đề theo yêu cầu này): ${customPrompt}\n` 
+            : `\n2. Tạo một bộ đề kiểm tra BẮT BUỘC gồm ĐÚNG 10 câu hỏi (Gồm 8 câu loại "nhiều lựa chọn" và 2 câu loại "đúng sai").\n`;
+
         const prompt = `Bạn là chuyên gia giáo dục. Hãy đọc tài liệu đính kèm hoặc nội dung sau đây và thực hiện 2 nhiệm vụ:
         1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt kiến thức cốt lõi (Trình bày dạng văn bản có phân cấp rõ ràng bằng gạch đầu dòng).
-        2. Tạo một bộ đề kiểm tra BẮT BUỘC gồm ĐÚNG 10 câu hỏi (Gồm 8 câu loại "nhiều lựa chọn" và 2 câu loại "đúng sai").
+        ${taskInstruction}
         
         Yêu cầu BẮT BUỘC trả về ĐÚNG định dạng JSON sau (Tuyệt đối không bọc trong markdown hay thêm text bên ngoài, format phải chuẩn JSON):
         {
@@ -182,10 +189,9 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 });
 
 // ==========================================
-// 6. KHỞI ĐỘNG MÁY CHỦ (BẢN CHỐT CHỐNG SẬP RAILWAY)
+// 6. KHỞI ĐỘNG MÁY CHỦ
 // ==========================================
 const PORT = process.env.PORT || 3000;
-// Bỏ hoàn toàn '0.0.0.0' đi để Node.js tự động mở cả cửa IPv4 và IPv6
 app.listen(PORT, () => {
     console.log(`🚀 Hệ thống Khảo Thí Backend 2.0 đang nổ máy tại cổng ${PORT}`);
 });
