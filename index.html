@@ -10,11 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" />
     
-    <!-- Các thư viện xử lý -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- THƯ VIỆN VẼ SƠ ĐỒ TƯ DUY SIÊU CẤP (Markmap + D3) -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
@@ -128,6 +125,13 @@
         .toast { min-width: 280px; padding: 16px; border-radius: 8px; color: white; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 12px; animation: slideIn 0.3s forwards; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         .t-ok { background: #10b981; } .t-err { background: #ef4444; } .t-warn { background: #f59e0b; } .t-loading { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Style riêng cho các khu vực Khối Lớp */
+        .grade-section { margin-bottom: 40px; }
+        .grade-title { font-size: 20px; font-weight: 800; color: var(--primary); border-bottom: 2px solid #e0e7ff; padding-bottom: 12px; margin-bottom: 20px; display:flex; align-items:center; gap:10px; }
+        .grade-title span { background: #e0e7ff; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; }
+        .grade-title.review { color: #10b981; border-color: #d1fae5; }
+        .grade-title.review span { background: #d1fae5; color: #10b981; }
     </style>
 </head>
 <body>
@@ -373,26 +377,22 @@
         setTimeout(() => el.remove(), type==='loading'? 8000 : 4000); 
     };
 
-    // HÀM VẼ SƠ ĐỒ TƯ DUY (MARKMAP) TỪ CHỮ THÔ
     window.renderMM = (text, svgId) => {
         try {
             if(!text) return;
-            // Xử lý chuẩn hóa text để tương thích với cấu trúc của Markmap
             let lines = text.trim().split('\n');
             if(!lines[0].trim().startsWith('#')) {
-                // Đảm bảo dòng đầu tiên là Root (Tiêu đề chính) có dấu #
                 lines[0] = '# ' + lines[0].replace(/^-/, '').trim();
             }
             let md = lines.join('\n');
             
-            // Gọi thư viện
             const { Transformer, Markmap } = window.markmap;
             const transformer = new Transformer();
             const { root } = transformer.transform(md);
             
             const svgEl = document.getElementById(svgId);
-            svgEl.innerHTML = ""; // Xóa sơ đồ cũ
-            Markmap.create(svgEl, null, root); // Vẽ sơ đồ mới
+            svgEl.innerHTML = ""; 
+            Markmap.create(svgEl, null, root); 
         } catch(e) { console.error("Lỗi vẽ Mindmap:", e); }
     };
 
@@ -858,7 +858,6 @@
         const mindmapText = drafts.mindmap || "";
         const questionsList = drafts.exam || [];
 
-        // Giao diện Giáo viên: Bổ sung cái SVG ở trên và Textarea ở dưới để vừa gõ vừa xem hình
         let html = `
         <div class="q-card" style="border-left: 4px solid var(--success); background: #f0fdf4;">
             <h4 style="color: var(--success); margin-top: 0; display:flex; justify-content:space-between; align-items:center;">
@@ -889,7 +888,6 @@
         }); 
         $('qDrafts').innerHTML = html; 
 
-        // Vẽ sơ đồ ngay sau khi load giao diện xong
         setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
     };
 
@@ -1074,6 +1072,7 @@
         loadExams();
     };
 
+    // THUẬT TOÁN HIỂN THỊ VÀ PHÂN CHIA KHỐI LỚP SIÊU CHUẨN
     const loadExams = () => { 
         const myGrade = session.studentClass.substring(0, 2); 
         const selectedSubj = $('sFilterSubj').value; 
@@ -1092,29 +1091,70 @@
         }
 
         if(es.length===0) return $('eCont').innerHTML = `<div style="text-align:center; padding:40px; background:white; border-radius:16px; color:#94a3b8;"><i class="fa-solid fa-mug-hot" style="font-size:36px; margin-bottom:15px; color:#cbd5e1;"></i><br><b style="font-size:16px;">Tuyệt vời, bạn không có nhiệm vụ tồn đọng môn này!</b></div>`; 
-        $('eCont').innerHTML = ""; 
-        
-        let previousPassed = true; 
 
-        es.forEach(e => { 
-            const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username); 
-            const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10); 
+        // Phân loại bài tập theo Khối
+        let exams10 = es.filter(e => e.targetClass.startsWith('10'));
+        let exams11 = es.filter(e => e.targetClass.startsWith('11'));
+        let exams12 = es.filter(e => e.targetClass.startsWith('12'));
+
+        let html = "";
+
+        // Hàm render khu vực riêng cho từng Khối
+        const renderGradeBlock = (gradeExams, gradeLabel, isReview) => {
+            if(gradeExams.length === 0) return "";
             
-            let btnHtm = '';
-            if(!previousPassed) {
-                btnHtm = `<button class="game-btn game-btn-disabled" disabled><i class="fa-solid fa-lock"></i> HOÀN THÀNH BÀI TRƯỚC</button>`;
-            } else {
-                if(isDonePerfect) {
-                    btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')" style="background:#10b981; box-shadow: 0 5px 0 #059669;"><i class="fa-solid fa-check-double"></i> ÔN TẬP LẠI</button>`; 
+            // Trang trí tiêu đề phân biệt Ôn tập (Mở hết) vs Học mới (Khóa tuần tự)
+            let titleClass = isReview ? 'grade-title review' : 'grade-title';
+            let titleIcon = isReview ? '<i class="fa-solid fa-rotate-left"></i>' : '<i class="fa-solid fa-book"></i>';
+            let badgeText = isReview ? 'Ôn tập kiến thức cũ (Mở khóa toàn bộ)' : 'Chương trình chính (Mở khóa tuần tự)';
+            
+            let blockHtml = `<div class="grade-section">
+                <h3 class="${titleClass}">${titleIcon} KHỐI ${gradeLabel} <span>${badgeText}</span></h3>`;
+
+            let previousPassed = true;
+
+            gradeExams.forEach(e => {
+                const attempts = scoresDB.filter(s => s.examId === e.id && s.studentUsername === session.username);
+                const isDonePerfect = attempts.some(s => parseFloat(s.score) >= 10);
+
+                let btnHtm = '';
+                // Nếu là khu vực Ôn tập thì luôn được mở (bỏ qua previousPassed)
+                let isLocked = !isReview && !previousPassed;
+
+                if(isLocked) {
+                    btnHtm = `<button class="game-btn game-btn-disabled" disabled><i class="fa-solid fa-lock"></i> HOÀN THÀNH BÀI TRƯỚC</button>`;
                 } else {
-                    btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')"><i class="fa-solid fa-play"></i> LÀM BÀI LẦN ${attempts.length + 1}</button>`; 
+                    if(isDonePerfect) {
+                        btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')" style="background:#10b981; box-shadow: 0 5px 0 #059669;"><i class="fa-solid fa-check-double"></i> ÔN TẬP LẠI</button>`; 
+                    } else {
+                        btnHtm = `<button class="game-btn" onclick="doExam('${e.id}')"><i class="fa-solid fa-play"></i> LÀM BÀI LẦN ${attempts.length + 1}</button>`; 
+                    }
                 }
-            }
-            
-            $('eCont').innerHTML += `<div class="mission-card ${!previousPassed ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
-            
-            previousPassed = isDonePerfect; 
-        }); 
+
+                blockHtml += `<div class="mission-card ${isLocked ? 'locked' : ''}"><div><div class="badge" style="background:#fef3c7; color:#d97706; margin-bottom:8px;"><i class="fa-solid fa-star"></i> Môn ${e.subject}</div><h3 style="margin:0 0 4px 0; color:#0f172a; font-size:18px;">[${e.targetClass}] ${e.topic}</h3><small style="color:#64748b; font-weight:600;"><i class="fa-solid fa-chalkboard-user"></i> Giám thị: ${e.teacherName}</small></div><div>${btnHtm}</div></div>`; 
+                
+                // Cập nhật điều kiện khóa cho bài tiếp theo (chỉ áp dụng nếu không phải khu vực Ôn tập)
+                if (!isReview) {
+                    previousPassed = isDonePerfect; 
+                }
+            });
+            blockHtml += `</div>`;
+            return blockHtml;
+        };
+
+        // Ráp nối các khu vực tùy theo Khối lớp của Học sinh
+        if(myGrade === '10') {
+            html += renderGradeBlock(exams10, '10', false);
+        } else if (myGrade === '11') {
+            html += renderGradeBlock(exams10, '10', true);  // Khối 10 là Ôn tập (Mở toàn bộ)
+            html += renderGradeBlock(exams11, '11', false); // Khối 11 là Học mới (Khóa tuần tự)
+        } else if (myGrade === '12') {
+            html += renderGradeBlock(exams10, '10', true);  // Lớp 12 nhìn thấy khối 10 mở toang
+            html += renderGradeBlock(exams11, '11', true);  // Lớp 12 nhìn thấy khối 11 mở toang
+            html += renderGradeBlock(exams12, '12', false); // Lớp 12 bắt đầu khóa tuần tự ở bài khối 12
+        }
+
+        $('eCont').innerHTML = html; 
     };
 
     const doExam = (id) => {
@@ -1131,7 +1171,6 @@
                  </div>`;
         h += `<h2 style="color:#1e293b; margin-bottom:20px; text-align:center; font-weight:900;"><i class="fa-solid fa-fire" style="color:#ef4444;"></i> NHIỆM VỤ: ${ex.topic.toUpperCase()}</h2>`;
         
-        // Khu vực hiển thị BẢN ĐỒ SVG tương tác cho học sinh
         if(ex.mindmap) {
             h += `
             <div class="q-card" style="background:#f0fdf4; border-color:#86efac; border-left:6px solid #10b981; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(16,185,129,0.1);">
@@ -1141,7 +1180,6 @@
                 </div>
             </div>
             `;
-            // Kích hoạt vẽ đồ họa sau khi nhúng HTML
             setTimeout(() => renderMM(ex.mindmap, 'student-mm'), 100);
         }
 
