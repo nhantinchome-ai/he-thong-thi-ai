@@ -291,6 +291,12 @@
                         </datalist>
                     </div>
                     <div class="form-group" style="flex:2;"><label>Tên bài (Tiêu đề):</label><input type="text" id="tWeek" placeholder="VD: Bài 1: Khái quát hệ thống..."></div>
+                    
+                    <!-- THÊM Ô NHẬP THỜI GIAN LÀM BÀI CHO HỌC SINH -->
+                    <div class="form-group" style="flex:1;">
+                        <label>Thời gian (Phút):</label>
+                        <input type="number" id="tTime" value="45" min="1" style="font-weight:700; color:var(--primary);">
+                    </div>
                 </div>
 
                 <div id="aiComponents">
@@ -894,7 +900,7 @@
         myExams.reverse().forEach(e => {
             let badgeCat = e.category ? `<span class="badge" style="background:#f1f5f9; color:#475569; margin-left:8px; font-size:11px;">${e.category}</span>` : "";
             h += `<div style="border:1px solid #cbd5e1; border-radius:8px; padding:15px; background:white; display:flex; justify-content:space-between; align-items:center;">
-                    <div><b style="color:var(--primary);">${e.topic}</b> ${badgeCat}<br><small style="color:#64748b;">Lớp: ${e.targetClass} | Gồm: Sơ đồ + ${e.questions.length} câu</small></div>
+                    <div><b style="color:var(--primary);">${e.topic}</b> ${badgeCat}<br><small style="color:#64748b;">Lớp: ${e.targetClass} | Gồm: Sơ đồ + ${e.questions.length} câu | ⏱️ ${e.duration || 45} phút</small></div>
                     <div style="display:flex; gap:8px;">
                         <button class="btn-outline" style="padding:6px 12px; font-size:12px;" onclick="editPublishedExam('${e.id}')"><i class="fa-solid fa-pen"></i> Sửa</button>
                         <button class="btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePublishedExam('${e.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -974,6 +980,7 @@
         $('tClass').value = ex.targetClass;
         $('tCategory').value = ex.category || ''; 
         $('tWeek').value = ex.topic;
+        $('tTime').value = ex.duration || 45; // Gắn lại thời gian cũ lên ô input
         editingExamId = id; 
         
         switchTeaTab('rade');
@@ -989,6 +996,17 @@
         saveLocal();
         switchTeaTab('thongke'); 
         toast("Đã xóa đề!", "success");
+    };
+
+    // MÀNG LỌC REGEX: TỰ ĐỘNG CẮT BỎ CÁC TỪ NHƯ "Câu 27:", "Bài 5.", "A.", "B)"...
+    const cleanQuestionText = (text) => {
+        if (!text) return "";
+        return text.replace(/^(Câu|Bài|Question)\s*\d+[\.\:\-]?\s*/i, '').trim();
+    };
+
+    const cleanOptionText = (text) => {
+        if (!text) return "";
+        return text.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
     };
 
     const renderDraft = () => { 
@@ -1013,14 +1031,23 @@
         `;
 
         questionsList.forEach((q, i) => { 
-            html += `<div class="q-card" id="qd-${i}"><button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px;"><i class="fa-solid fa-trash"></i></button><p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p><textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${q.questionText}</textarea>`; 
+            // Áp dụng màng lọc chém sạch chữ "Câu X:" cho văn bản vào ô Input
+            let cleanQText = cleanQuestionText(q.questionText);
+
+            html += `<div class="q-card" id="qd-${i}"><button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px;"><i class="fa-solid fa-trash"></i></button><p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p><textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${cleanQText}</textarea>`; 
             if(q.type==='nhiều lựa chọn') { 
                 html+=`<div style="margin-top:12px;">`; 
-                q.options.forEach((o,j) => html+=`<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${o}" style="flex:1; padding:8px;"></div>`); 
+                q.options.forEach((o,j) => {
+                    let cleanOpt = cleanOptionText(o); // Cắt "A.", "B."
+                    html+=`<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${cleanOpt}" style="flex:1; padding:8px;"></div>`;
+                }); 
                 html+=`<div style="margin-top:12px; display:inline-block; background:var(--bg-light); padding:8px 12px; border-radius:6px; border:1px solid var(--border);"><b>KEY ĐÁP ÁN:</b> <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||'A'}" style="width:50px; text-align:center; padding:4px;"></div></div>`; 
             } else if(q.type==='đúng sai') { 
                 html+=`<div style="margin-top:12px;">`; 
-                q.subOptions.forEach((s,j) => html+=`<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${s}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${q.correctAnswers && q.correctAnswers[j]==='D'?'selected':''}>ĐÚNG</option><option value="S" ${q.correctAnswers && q.correctAnswers[j]==='S'?'selected':''}>SAI</option></select></div>`); 
+                q.subOptions.forEach((s,j) => {
+                    let cleanSubOpt = cleanOptionText(s); // Cắt ký tự thừa
+                    html+=`<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${q.correctAnswers && q.correctAnswers[j]==='D'?'selected':''}>ĐÚNG</option><option value="S" ${q.correctAnswers && q.correctAnswers[j]==='S'?'selected':''}>SAI</option></select></div>`;
+                }); 
                 html+=`</div>`; 
             } 
             html += `</div>`; 
@@ -1066,6 +1093,7 @@
         let fQs = drafts.exam; 
         const finalMindmap = drafts.mindmap;
         const examCategory = $('tCategory').value || 'Không phân loại'; 
+        const examDuration = parseInt($('tTime').value) || 45; // Lấy dữ liệu thời gian làm bài, mặc định 45
         
         const createTime = Date.now();
 
@@ -1075,6 +1103,7 @@
                 examsDB[index].targetClass = $('tClass').value;
                 examsDB[index].category = examCategory;
                 examsDB[index].topic = $('tWeek').value;
+                examsDB[index].duration = examDuration;
                 examsDB[index].mindmap = finalMindmap;
                 examsDB[index].questions = fQs;
             }
@@ -1086,6 +1115,7 @@
                 category: examCategory, 
                 subject: session.teachingSubject, 
                 topic: $('tWeek').value, 
+                duration: examDuration, // Đẩy thời gian vào DB
                 mindmap: finalMindmap, 
                 questions: fQs, 
                 teacherName: session.fullname,
@@ -1374,9 +1404,14 @@
         const ex = examsDB.find(e=>e.id===id); currentExamLen = ex.questions.length;
         let shuffledQs = shuffleArray([...ex.questions]);
 
+        // CẬP NHẬT ĐỒNG HỒ ĐẾM NGƯỢC TỪ DB (Mặc định 45 phút nếu rỗng)
+        const durationMins = ex.duration || 45;
+        const durationSecs = durationMins * 60;
+        const formattedTime = durationMins < 10 ? `0${durationMins}:00` : `${durationMins}:00`;
+
         let h = `<div class="progress-bg">
                     <div class="progress-fill" id="pBar"></div>
-                    <div id="examTimerBox" class="timer-box">⏱️ 20:00</div>
+                    <div id="examTimerBox" class="timer-box">⏱️ ${formattedTime}</div>
                  </div>`;
         h += `<h2 style="color:#1e293b; margin-bottom:20px; text-align:center; font-weight:900;"><i class="fa-solid fa-fire" style="color:#ef4444;"></i> NHIỆM VỤ: ${ex.topic.toUpperCase()}</h2>`;
         
@@ -1394,7 +1429,11 @@
 
         shuffledQs.forEach((q, i) => {
             let encodedCorrect = q.correctAnswer; h+=`<div class="game-q-card" id="sc-${i}" data-type="${q.type}">`;
-            h+=`<h3 style="font-size:18px; margin-top:0; color:#1e293b; font-weight:800;">Câu ${i+1}: ${q.questionText}</h3><div id="qwrap-${i}">`;
+            
+            // Xóa rác khi hiển thị cho Học Sinh
+            let cleanQTextHS = cleanQuestionText(q.questionText);
+
+            h+=`<h3 style="font-size:18px; margin-top:0; color:#1e293b; font-weight:800;">Câu ${i+1}: ${cleanQTextHS}</h3><div id="qwrap-${i}">`;
             
             if(q.type==='nhiều lựa chọn') { 
                 let opsWithState = q.options.map((optText, origIdx) => ({ text: optText, isCorrect: String.fromCharCode(65+origIdx) === q.correctAnswer }));
@@ -1402,12 +1441,12 @@
                 shuffledOps.forEach((o, j) => {
                     const letter = String.fromCharCode(65+j); const tId = `tile-${i}-${j}`;
                     
-                    let cleanText = o.text.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
+                    let cleanOptHS = cleanOptionText(o.text);
                     
                     h+=`<div class="option-tile" id="${tId}" onclick="selectTile('${tId}', 'sa_${i}', '${letter}')">
                             <input type="radio" name="sa_${i}" value="${letter}" style="display:none;">
                             <div style="width:30px; height:30px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:900; color:#64748b;">${letter}</div>
-                            <span style="font-size:16px;">${cleanText}</span>
+                            <span style="font-size:16px;">${cleanOptHS}</span>
                         </div>`;
                 }); 
             }
@@ -1415,9 +1454,9 @@
                 encodedCorrect = q.correctAnswers.join(',');
                 h+=`<table><tr><th style="background:transparent; border:none; padding:8px;"></th><th style="width:80px;text-align:center; background:#dcfce7; color:#166534; border-radius:8px;">ĐÚNG</th><th style="width:80px;text-align:center; background:#fee2e2; color:#991b1b; border-radius:8px;">SAI</th></tr>`; 
                 q.subOptions.forEach((s,j)=> {
-                    let cleanSubText = s.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
+                    let cleanSubOptHS = cleanOptionText(s);
                     
-                    h+=`<tr><td style="border:none; padding:12px 0;"><div class="option-tile" style="margin:0;">${cleanSubText}</div></td>
+                    h+=`<tr><td style="border:none; padding:12px 0;"><div class="option-tile" style="margin:0;">${cleanSubOptHS}</div></td>
                         <td style="text-align:center; border:none;"><input type="radio" name="sd_${i}_${j}" value="D" style="width:24px;height:24px;" onchange="updateXP()"></td>
                         <td style="text-align:center; border:none;"><input type="radio" name="sd_${i}_${j}" value="S" style="width:24px;height:24px;" onchange="updateXP()"></td></tr>`;
                 }); h+=`</table>`; 
@@ -1428,7 +1467,7 @@
         window.scrollTo({top:0, behavior:'smooth'});
         
         clearInterval(timerInterval);
-        startTimer(1200, $('examTimerBox'), id);
+        startTimer(durationSecs, $('examTimerBox'), id);
     };
 
     const submitExam = (id, isAuto = false) => {
