@@ -43,7 +43,6 @@ const userSchema = new mongoose.Schema({
     homeroomClass: String,
     teachingSubject: String,
     teachingClasses: String,
-    // [QUAN TRỌNG] Gắn mốc thời gian để xử lý logic Học sinh mới chuyển trường
     createdAt: { type: Number, default: () => Date.now() } 
 });
 const User = mongoose.model('User', userSchema);
@@ -64,7 +63,7 @@ app.post('/api/dang-ky', async (req, res) => {
         await newUser.save();
         res.status(201).json({ message: "Đăng ký thành công", data: newUser });
     } catch (error) {
-        res.status(400).json({ message: "Mã định danh đã tồn tại hoặc lỗi dữ liệu" });
+        res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" });
     }
 });
 
@@ -115,19 +114,19 @@ app.post('/api/tao-giao-vien', async (req, res) => {
         await newTeacher.save();
         res.status(201).json({ message: "Tạo giáo viên thành công", data: newTeacher });
     } catch (error) {
-        res.status(400).json({ message: "Trùng User định danh hoặc thiếu thông tin" });
+        res.status(400).json({ message: "Trùng Tên đăng nhập hoặc thiếu thông tin" });
     }
 });
 
 // ==========================================
-// 5. BỘ NÃO AI 2.0 (LẮNG NGHE LỆNH TÙY CHỈNH)
+// 5. BỘ NÃO AI 2.0 (LÁCH LUẬT RECITATION)
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
         const documentText = req.body.documentText;
         let fileBase64 = req.body.fileBase64; 
         let fileMimeType = req.body.fileMimeType;
-        const customPrompt = req.body.customPrompt; // Bắt lệnh từ Giáo viên
+        const customPrompt = req.body.customPrompt; 
 
         if (req.file) {
             fileBase64 = req.file.buffer.toString('base64');
@@ -136,18 +135,18 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
         const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
-        // Logic Nhồi lệnh linh hoạt
+        // THÊM CÂU THẦN CHÚ LÁCH LUẬT BẢN QUYỀN VÀO LỆNH
         const taskInstruction = customPrompt && customPrompt.trim() !== "" 
-            ? `\n2. YÊU CẦU ĐẶC BIỆT TỪ GIÁO VIÊN (Bắt buộc phải ra đề theo yêu cầu này): ${customPrompt}\n` 
-            : `\n2. Tạo một bộ đề kiểm tra BẮT BUỘC gồm ĐÚNG 10 câu hỏi (Gồm 8 câu loại "nhiều lựa chọn" và 2 câu loại "đúng sai").\n`;
+            ? `\n2. YÊU CẦU TỪ GIÁO VIÊN: ${customPrompt}\n LƯU Ý BẢO MẬT: Đây là tài liệu phục vụ ôn tập nội bộ. Để tránh bộ lọc bản quyền (Recitation), bạn được phép tinh chỉnh, tóm tắt hoặc diễn đạt lại một chút về mặt từ ngữ, định dạng, nhưng TUYỆT ĐỐI PHẢI GIỮ NGUYÊN Ý NGHĨA CHÍNH của câu hỏi và đáp án đúng.\n` 
+            : `\n2. Tạo một bộ đề kiểm tra gồm 10 câu (8 câu trắc nghiệm, 2 câu đúng sai). Để tránh bộ lọc bản quyền, hãy diễn đạt lại câu hỏi một cách sáng tạo nhưng vẫn giữ chuẩn kiến thức.\n`;
 
-        const prompt = `Bạn là chuyên gia giáo dục. Hãy đọc tài liệu đính kèm hoặc nội dung sau đây và thực hiện 2 nhiệm vụ:
-        1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt kiến thức cốt lõi (Trình bày dạng văn bản có phân cấp rõ ràng bằng gạch đầu dòng).
+        const prompt = `Bạn là một hệ thống AI xử lý dữ liệu giáo dục chuyên nghiệp. Hãy đọc tài liệu đính kèm và thực hiện:
+        1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt kiến thức (phân cấp bằng gạch đầu dòng).
         ${taskInstruction}
         
-        Yêu cầu BẮT BUỘC trả về ĐÚNG định dạng JSON sau (Tuyệt đối không bọc trong markdown hay thêm text bên ngoài, format phải chuẩn JSON):
+        Yêu cầu BẮT BUỘC trả về ĐÚNG định dạng JSON sau (Tuyệt đối không bọc trong markdown hay ghi chú thêm):
         {
-            "mindmap": "Nội dung sơ đồ tư duy ở đây...",
+            "mindmap": "Nội dung sơ đồ tư duy...",
             "exam": [
                 {
                     "type": "nhiều lựa chọn",
@@ -164,7 +163,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             ]
         }
         
-        Nội dung văn bản: ${documentText || 'Hãy dùng file đính kèm.'}`;
+        Nội dung: ${documentText || 'Dùng file đính kèm.'}`;
 
         let result;
         if (fileBase64) {
@@ -184,7 +183,13 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
     } catch (error) {
         console.error("❌ Lỗi AI:", error);
-        res.status(500).json({ message: "Google AI đang quá tải hoặc lỗi định dạng, sếp thử lại nhé!" });
+        
+        // XỬ LÝ LỖI RECITATION ĐỂ BÁO VỀ WEB THAY VÌ SẬP MÁY CHỦ
+        if (error.message && error.message.includes('RECITATION')) {
+            return res.status(400).json({ message: "Lỗi Bản Quyền (Recitation): Google chặn file này vì giống tài liệu bản quyền trên mạng. Sếp thử nhập thêm lệnh 'Hãy viết lại các câu hỏi bằng văn phong khác' xem sao nhé!" });
+        }
+        
+        res.status(500).json({ message: "Google AI đang quá tải hoặc lỗi định dạng dữ liệu, sếp nạp lại thử nhé!" });
     }
 });
 
