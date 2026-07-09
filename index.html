@@ -183,13 +183,13 @@
     <div id="authSection" class="card" style="max-width: 420px; margin: 60px auto;">
         <div class="tabs"><div class="tab active" id="tLog" onclick="switchT('login')">Đăng Nhập</div><div class="tab" id="tReg" onclick="switchT('register')">Hồ Sơ Mới</div></div>
         <div id="fLog">
-            <div class="form-group"><label>Tên đăng nhập:</label><input type="text" id="lUsr" placeholder="Tên đăng nhập..."></div>
+            <div class="form-group"><label>Tên đăng nhập:</label><input type="text" id="lUsr" placeholder="Tài khoản..."></div>
             <div class="form-group"><label>Mật khẩu:</label><div class="pwd-box"><input type="password" id="lPwd" placeholder="Mật khẩu..."><i class="fa-solid fa-eye btn-eye" onclick="togglePwd('lPwd', this)"></i></div></div>
             <button class="btn-full" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> ĐĂNG NHẬP</button>
         </div>
         <div id="fReg" class="hidden">
             <div class="form-group"><label>Họ và tên đầy đủ:</label><input type="text" id="rName"></div>
-            <div class="form-group"><label>Tên đăng nhập:</label><input type="text" id="rUsr"></div>
+            <div class="form-group"><label>Tên đăng nhập mới:</label><input type="text" id="rUsr"></div>
             <div class="form-group"><label>Mật khẩu:</label><div class="pwd-box"><input type="password" id="rPwd"><i class="fa-solid fa-eye btn-eye" onclick="togglePwd('rPwd', this)"></i></div></div>
             <div style="display:flex; gap:15px;">
                 <div class="form-group" style="flex:1;"><label>Khối:</label><select id="rGr" onchange="loadClass()"><option value="">-- Chọn --</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></div>
@@ -202,7 +202,7 @@
     <div id="adminPanel" class="panel card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
             <h2 class="section-title" style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> QUẢN TRỊ HỆ THỐNG</h2>
-            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
+            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Đóng phiên</button>
         </div>
         <div style="display:flex; gap:30px;">
             <div style="flex:1;">
@@ -292,7 +292,6 @@
                     </div>
                     <div class="form-group" style="flex:2;"><label>Tên bài (Tiêu đề):</label><input type="text" id="tWeek" placeholder="VD: Bài 1: Khái quát hệ thống..."></div>
                     
-                    <!-- THÊM Ô NHẬP THỜI GIAN LÀM BÀI CHO HỌC SINH -->
                     <div class="form-group" style="flex:1;">
                         <label>Thời gian (Phút):</label>
                         <input type="number" id="tTime" value="45" min="1" style="font-weight:700; color:var(--primary);">
@@ -942,7 +941,7 @@
         let finalCustomPrompt = $('tCustomPrompt').value;
 
         if(currentMode === 'scan') {
-            finalCustomPrompt = "ĐÂY LÀ ẢNH CHỤP HOẶC PDF CỦA MỘT ĐỀ THI CÓ SẴN. Yêu cầu: Đóng vai trò là phần mềm Scan văn bản, TRÍCH XUẤT CHÍNH XÁC từng câu hỏi, các đáp án A, B, C, D từ hình ảnh/văn bản này. KHÔNG ĐƯỢC TỰ BỊA THÊM HAY CẮT BỚT. Nếu đề có đánh dấu đáp án thì ghi nhận, chưa có thì tự giải. Tóm tắt nội dung chính làm sơ đồ tư duy.";
+            finalCustomPrompt = "Trích xuất đề thi từ file. BẮT BUỘC THỰC HIỆN ĐỂ TRÁNH LỖI BẢN QUYỀN (RECITATION): Bạn KHÔNG ĐƯỢC sao chép y nguyên 100% văn bản. Hãy viết lại (paraphrase), thay đổi cấu trúc câu hoặc từ đồng nghĩa của tất cả các câu hỏi và đáp án ít nhất 15% so với bản gốc, đảm bảo giữ nguyên ý nghĩa và đáp án đúng. Tóm tắt nội dung làm sơ đồ tư duy. " + finalCustomPrompt;
         }
 
         let payload = {
@@ -958,15 +957,19 @@
                 headers:{'Content-Type':'application/json'}, 
                 body:JSON.stringify(payload) 
             }); 
+            
+            // Lấy DATA TỪ BACKEND để hiển thị lỗi Bản Quyền nếu có
+            const resData = await res.json();
+            
             if(res.ok) { 
-                drafts = (await res.json()).data; 
+                drafts = resData.data; 
                 editingExamId = null; 
                 $('tInput').style.display='none'; 
                 $('tReview').style.display='block'; 
                 renderDraft(); 
                 toast("AI đã bóc tách thành công bài khảo thí!", "success"); 
             } else {
-                toast("AI báo lỗi định dạng dữ liệu (File quá tải)!", "error"); 
+                toast(resData.message || "AI báo lỗi xử lý dữ liệu!", "error"); 
             }
         } catch(e) { 
             toast("Đứt mạng hoặc File nặng làm máy chủ sập!", "error"); 
@@ -980,7 +983,7 @@
         $('tClass').value = ex.targetClass;
         $('tCategory').value = ex.category || ''; 
         $('tWeek').value = ex.topic;
-        $('tTime').value = ex.duration || 45; // Gắn lại thời gian cũ lên ô input
+        $('tTime').value = ex.duration || 45; 
         editingExamId = id; 
         
         switchTeaTab('rade');
@@ -998,7 +1001,7 @@
         toast("Đã xóa đề!", "success");
     };
 
-    // MÀNG LỌC REGEX: TỰ ĐỘNG CẮT BỎ CÁC TỪ NHƯ "Câu 27:", "Bài 5.", "A.", "B)"...
+    // BỘ LỌC REGEX XÓA RÁC Ở ĐẦU CÂU (Câu 27:, Bài 1., A., B., a)...)
     const cleanQuestionText = (text) => {
         if (!text) return "";
         return text.replace(/^(Câu|Bài|Question)\s*\d+[\.\:\-]?\s*/i, '').trim();
@@ -1006,7 +1009,7 @@
 
     const cleanOptionText = (text) => {
         if (!text) return "";
-        return text.replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
+        return text.replace(/^[A-Da-dÝý]\s*[\.\:\)]\s*/i, '').replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
     };
 
     const renderDraft = () => { 
@@ -1031,21 +1034,21 @@
         `;
 
         questionsList.forEach((q, i) => { 
-            // Áp dụng màng lọc chém sạch chữ "Câu X:" cho văn bản vào ô Input
+            // Áp dụng màng lọc chém sạch chữ rác cho Giám khảo dễ nhìn
             let cleanQText = cleanQuestionText(q.questionText);
 
             html += `<div class="q-card" id="qd-${i}"><button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px;"><i class="fa-solid fa-trash"></i></button><p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p><textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${cleanQText}</textarea>`; 
             if(q.type==='nhiều lựa chọn') { 
                 html+=`<div style="margin-top:12px;">`; 
                 q.options.forEach((o,j) => {
-                    let cleanOpt = cleanOptionText(o); // Cắt "A.", "B."
+                    let cleanOpt = cleanOptionText(o); // Lọc sạch A. B. C. D.
                     html+=`<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${cleanOpt}" style="flex:1; padding:8px;"></div>`;
                 }); 
                 html+=`<div style="margin-top:12px; display:inline-block; background:var(--bg-light); padding:8px 12px; border-radius:6px; border:1px solid var(--border);"><b>KEY ĐÁP ÁN:</b> <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||'A'}" style="width:50px; text-align:center; padding:4px;"></div></div>`; 
             } else if(q.type==='đúng sai') { 
                 html+=`<div style="margin-top:12px;">`; 
                 q.subOptions.forEach((s,j) => {
-                    let cleanSubOpt = cleanOptionText(s); // Cắt ký tự thừa
+                    let cleanSubOpt = cleanOptionText(s); // Lọc sạch Ý a, b, c
                     html+=`<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${q.correctAnswers && q.correctAnswers[j]==='D'?'selected':''}>ĐÚNG</option><option value="S" ${q.correctAnswers && q.correctAnswers[j]==='S'?'selected':''}>SAI</option></select></div>`;
                 }); 
                 html+=`</div>`; 
@@ -1093,7 +1096,7 @@
         let fQs = drafts.exam; 
         const finalMindmap = drafts.mindmap;
         const examCategory = $('tCategory').value || 'Không phân loại'; 
-        const examDuration = parseInt($('tTime').value) || 45; // Lấy dữ liệu thời gian làm bài, mặc định 45
+        const examDuration = parseInt($('tTime').value) || 45; 
         
         const createTime = Date.now();
 
@@ -1115,7 +1118,7 @@
                 category: examCategory, 
                 subject: session.teachingSubject, 
                 topic: $('tWeek').value, 
-                duration: examDuration, // Đẩy thời gian vào DB
+                duration: examDuration, 
                 mindmap: finalMindmap, 
                 questions: fQs, 
                 teacherName: session.fullname,
@@ -1404,7 +1407,6 @@
         const ex = examsDB.find(e=>e.id===id); currentExamLen = ex.questions.length;
         let shuffledQs = shuffleArray([...ex.questions]);
 
-        // CẬP NHẬT ĐỒNG HỒ ĐẾM NGƯỢC TỪ DB (Mặc định 45 phút nếu rỗng)
         const durationMins = ex.duration || 45;
         const durationSecs = durationMins * 60;
         const formattedTime = durationMins < 10 ? `0${durationMins}:00` : `${durationMins}:00`;
