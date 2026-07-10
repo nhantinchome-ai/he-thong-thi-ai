@@ -87,7 +87,25 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 });
 
 // ==========================================
-// BỘ NÃO AI OCR - CHỐNG BỆNH LƯỜI + KHUNG GIÁO VIÊN
+// HÀM NHẬN DIỆN MÔN HỌC & TẠO THẦN CHÚ LÁCH BẢN QUYỀN
+// ==========================================
+function getSmartPrompt(subject, customPrompt) {
+    let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
+    const subj = (subject || "").toLowerCase();
+
+    if (subj.includes('toán') || subj.includes('lý') || subj.includes('vật lí') || subj.includes('hóa') || subj.includes('tin')) {
+        return base + `[CHỈ THỊ TỐI MẬT - KHỐI TỰ NHIÊN]: Bắt buộc viết lại (paraphrase) phần lời văn của câu hỏi bằng từ đồng nghĩa. TUYỆT ĐỐI GIỮ NGUYÊN 100% các con số, biến số, công thức, ký hiệu toán học/hóa học và đáp án.`;
+    } else if (subj.includes('văn') || subj.includes('sử') || subj.includes('địa') || subj.includes('gdcd') || subj.includes('kinh tế')) {
+        return base + `[CHỈ THỊ TỐI MẬT - KHỐI XÃ HỘI]: Bắt buộc diễn đạt lại toàn bộ câu hỏi bằng cách đảo cấu trúc câu, thay thế ít nhất 30% từ vựng bằng từ đồng nghĩa để tránh bản quyền. TUYỆT ĐỐI GIỮ NGUYÊN các mốc thời gian, địa danh, tên nhân vật, sự kiện và đáp án đúng.`;
+    } else if (subj.includes('anh') || subj.includes('ngoại ngữ')) {
+        return base + `[CHỈ THỊ TỐI MẬT - KHỐI NGOẠI NGỮ]: Chỉ được phép viết lại (paraphrase) phần "yêu cầu bằng tiếng Việt" của đề bài. TUYỆT ĐỐI GIỮ NGUYÊN 100% đoạn văn đọc hiểu (Reading), câu hỏi ngữ pháp tiếng Anh và các từ vựng trong đáp án. Không được dịch tiếng Anh sang tiếng Việt.`;
+    } else {
+        return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa và đảo cấu trúc câu để không trùng lặp văn bản gốc. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`;
+    }
+}
+
+// ==========================================
+// BỘ NÃO AI OCR - CƠ CHẾ AUTO LÁCH BẢN QUYỀN
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     let tempFilePath = null;
@@ -96,44 +114,12 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
         if (apiKeys.length === 0) return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
 
-        // Vẫn giữ lại đội hình này để xoay vòng khi hết Quota 20 lần/ngày
         const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite"];
 
+        // Hứng môn học từ Frontend gửi lên (Nếu có)
+        const teachingSubject = req.body.teachingSubject || "Mặc định"; 
         const documentText = req.body.documentText;
         const customPrompt = req.body.customPrompt; 
-
-        const taskInstruction = customPrompt && customPrompt.trim() !== "" 
-            ? `\n2. Lệnh Tùy Chỉnh: ${customPrompt}\n LƯU Ý MẬT: Bắt buộc paraphrase lại câu văn để tránh vi phạm bản quyền.\n` 
-            : `\n2. NHIỆM VỤ OCR: Bắt buộc paraphrase nhẹ nhàng 10-20% từ ngữ để né lỗi bản quyền (RECITATION).\n`;
-
-        // PROMPT SIÊU GẮT ÉP AI KHÔNG ĐƯỢC LƯỜI VÀ TẠO KHUNG BÁO CÁO HÌNH ẢNH
-        const prompt = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Hãy đọc tài liệu đính kèm và thực hiện:
-        1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt (bằng gạch đầu dòng).
-        ${taskInstruction}
-        3. TUYỆT ĐỐI KHÔNG ĐƯỢC LƯỜI BIẾNG: Đề gốc có bao nhiêu câu (dù là 30 hay 40 câu) BẮT BUỘC phải trích xuất ĐẦY ĐỦ 100%. Không được tự ý tóm tắt, không được bỏ sót câu nào!
-        4. KHUNG QUẢN LÝ HÌNH ẢNH DÀNH CHO GIÁO VIÊN: Đối chiếu câu bạn vừa viết lại với câu trong đề gốc. Nếu câu đó ở đề gốc CÓ HÌNH ẢNH, hãy ghi chú lại vào mảng "teacher_image_notes" để nhắc giáo viên đính kèm hình. Nếu không có hình thì mảng này để trống.
-        
-        BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON CHUẨN (KHÔNG BỌC TRONG MARKDOWN \`\`\`):
-        {
-            "mindmap": "Nội dung sơ đồ tư duy...",
-            "teacher_image_notes": [
-                {
-                    "cau_hien_tai": "Câu 1",
-                    "cau_goc": "Tương đương câu 5 trong đề gốc",
-                    "mo_ta_hinh_anh_can_chen": "Gắn hình sơ đồ quang hợp vào đây"
-                }
-            ],
-            "exam": [
-                {
-                    "type": "nhiều lựa chọn",
-                    "questionText": "Câu 1: Nội dung câu hỏi?",
-                    "options": ["A. Đáp án 1", "B. Đáp án 2", "C. Đáp án 3", "D. Đáp án 4"],
-                    "correctAnswer": "A"
-                }
-            ]
-        }
-        
-        Nội dung: ${documentText || 'Dùng file đính kèm.'}`;
 
         if (req.file) {
             tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${req.file.originalname}`);
@@ -142,18 +128,60 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
         let isSuccess = false;
         let finalResult = null;
+        let isRecitationMode = false; // Cờ theo dõi xem đã bị gõ bản quyền chưa
+
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+        // VÒNG LẶP KEY
         for (let i = 0; i < apiKeys.length; i++) {
             if (isSuccess) break;
             const currentKey = apiKeys[i];
             const genAI = new GoogleGenerativeAI(currentKey);
             const fileManager = new GoogleAIFileManager(currentKey);
 
+            // VÒNG LẶP MODEL
             for (let j = 0; j < modelsToTry.length; j++) {
                 if (isSuccess) break;
                 const currentModelName = modelsToTry[j];
-                console.log(`🔄 Đang thử nghiệm: [API Key ${i+1}/${apiKeys.length}] + [Model ${currentModelName}]...`);
+                
+                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
+                console.log(`🔄 Đang chạy: [Model ${currentModelName}] - ${modeText}...`);
+
+                // 1. CHIA ĐƯỜNG CÂU LỆNH DỰA VÀO CỜ BẢN QUYỀN
+                let currentInstruction = "";
+                if (!isRecitationMode) {
+                    // LẦN 1: Bắt buộc giữ nguyên 100% nguyên gốc
+                    currentInstruction = `\n2. NHIỆM VỤ OCR CHUẨN: BẮT BUỘC trích xuất chính xác 100% văn bản gốc. Tuyệt đối không được thêm bớt, tự ý tóm tắt hay sửa đổi bất kỳ từ ngữ nào của đề thi.\n`;
+                    if (customPrompt) currentInstruction += `Lệnh tùy chỉnh: ${customPrompt}\n`;
+                } else {
+                    // LẦN 2 (NẾU LỖI BẢN QUYỀN): Lôi hàm xào bài theo môn học ra xài
+                    currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`;
+                }
+
+                // 2. RÁP LỆNH CHO AI
+                const prompt = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Hãy đọc tài liệu đính kèm và thực hiện:
+                1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt (bằng gạch đầu dòng).
+                ${currentInstruction}
+                3. TUYỆT ĐỐI KHÔNG ĐƯỢC LƯỜI BIẾNG: Phải trích xuất ĐẦY ĐỦ 100% số câu.
+                4. KHUNG QUẢN LÝ HÌNH ẢNH: Nếu câu gốc CÓ HÌNH ẢNH, hãy ghi chú vào mảng "teacher_image_notes".
+                
+                BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON CHUẨN (KHÔNG BỌC TRONG MARKDOWN \`\`\`):
+                {
+                    "mindmap": "Nội dung...",
+                    "teacher_image_notes": [
+                        { "cau_hien_tai": "Câu 1", "cau_goc": "Tương đương câu 5 gốc", "mo_ta_hinh_anh_can_chen": "Sơ đồ điện..." }
+                    ],
+                    "exam": [
+                        {
+                            "type": "nhiều lựa chọn",
+                            "questionText": "Câu 1: Nội dung câu hỏi?",
+                            "options": ["A. Đáp án 1", "B. Đáp án 2", "C. Đáp án 3", "D. Đáp án 4"],
+                            "correctAnswer": "A"
+                        }
+                    ]
+                }
+                
+                Nội dung: ${documentText || 'Dùng file đính kèm.'}`;
 
                 try {
                     const model = genAI.getGenerativeModel({ model: currentModelName });
@@ -175,12 +203,23 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
                     finalResult = JSON.parse(responseText);
                     isSuccess = true;
-                    console.log(`✅ THÀNH CÔNG với [Key ${i+1}] + [Model ${currentModelName}]`);
+                    console.log(`✅ THÀNH CÔNG!`);
 
                 } catch (error) {
-                    console.error(`❌ Thất bại với [Key ${i+1}] + [Model ${currentModelName}]:`, error.message);
-                    if (error.message && error.message.includes('RECITATION')) throw new Error('RECITATION_ERROR');
-                    console.log("⏳ Google đang quá tải (Hết Quota), nhường đường 3 giây rồi đổi Key/Model bắn tiếp...");
+                    // XỬ LÝ QUAY XE KHI BỊ GÕ BẢN QUYỀN
+                    if (error.message && error.message.includes('RECITATION')) {
+                        if (!isRecitationMode) {
+                            console.log(`⚠️ Google bắt bản quyền! Hệ thống QUAY XE, bật khiên xào bài môn [${teachingSubject}]...`);
+                            isRecitationMode = true; // Bật cờ xào bài
+                            j--; // Lùi lại 1 bước, CHẠY LẠI CHÍNH MÔ HÌNH VÀ KEY VỪA RỒI
+                            continue; 
+                        } else {
+                            console.error(`❌ Đã xào bài rồi mà vẫn bắt bản quyền! Chịu chết!`);
+                            throw new Error('RECITATION_ERROR_FATAL');
+                        }
+                    }
+                    
+                    console.log("⏳ Nghẽn mạng / Quá tải. Nhường đường 3s rồi đổi Key...");
                     await sleep(3000); 
                 }
             }
@@ -189,12 +228,12 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
         
         if (isSuccess) return res.status(200).json({ data: finalResult });
-        else return res.status(503).json({ message: "Các Key của sếp đã bị vắt kiệt Quota trong ngày, vui lòng thêm Key mới hoặc chờ ngày mai!" });
+        else return res.status(503).json({ message: "Các Key của sếp đã bị vắt kiệt. Chờ lúc khác tải lại nhé!" });
 
     } catch (error) {
         if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-        if (error.message === 'RECITATION_ERROR') return res.status(400).json({ message: "Lỗi Bản quyền: Con AI vẫn bị bắt bài. Hãy bấm quét lại!" });
-        res.status(500).json({ message: "Lỗi kết nối máy chủ không xác định!" });
+        if (error.message === 'RECITATION_ERROR_FATAL') return res.status(400).json({ message: "Lỗi Bản quyền: Đã thử xào bài nhưng Google quá gắt. Hãy cắt nhỏ đề ra thành 2 lần quét nhé!" });
+        res.status(500).json({ message: "Lỗi kết nối máy chủ!" });
     }
 });
 
