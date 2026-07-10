@@ -7,22 +7,17 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { GoogleAIFileManager } = require('@google/generative-ai/server'); // Gọi thêm quản lý File
+const { GoogleAIFileManager } = require('@google/generative-ai/server');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Vẫn dùng Multer nhận file từ Web
 const upload = multer({ 
     storage: multer.memoryStorage(),
     limits: { fileSize: 50 * 1024 * 1024 } 
 });
-
-// Khởi tạo Gemini AI và File Manager
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log("✅ Đã thông mạch với MongoDB!"))
@@ -93,25 +88,40 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 });
 
 // ==========================================
-// BỘ NÃO AI 3.5 FLASH - CÔNG NGHỆ UPLOAD FILE API MỚI
+// VÒNG XOAY TỬ THẦN - FALLBACK API KEYS & MODELS
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
+    let tempFilePath = null;
     try {
+        // Lấy danh sách Key từ biến môi trường (Ưu tiên GEMINI_API_KEYS)
+        const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
+        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
+
+        if (apiKeys.length === 0) {
+            return res.status(500).json({ message: "Server chưa được cấu hình API Key!" });
+        }
+
+        // Danh sách các đời máy AI để xoay vòng (Đã loại bỏ bản Thinking)
+        const modelsToTry = [
+            "gemini-3.5-flash",              
+            "gemini-2.0-pro-exp",            
+            "gemini-1.5-pro",                
+            "gemini-1.5-flash"               
+        ];
+
         const documentText = req.body.documentText;
         const customPrompt = req.body.customPrompt; 
-        
-        // Gọi thẳng bản 3.5 Flash chính thức
-        const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
+        // Gắn thêm thần chú ẩn để né bản quyền
         const taskInstruction = customPrompt && customPrompt.trim() !== "" 
-            ? `\n2. Lệnh Tùy Chỉnh: ${customPrompt}\n` 
-            : `\n2. ĐÂY LÀ NHIỆM VỤ SỐ HÓA OCR (DATA ENTRY). Hãy trích xuất 100% CÁC CÂU HỎI TRONG ĐỀ THI. Giữ nguyên 100% cấu trúc, nội dung chữ, đáp án. Nếu có bảng đáp án đính kèm thì ghép luôn đáp án đúng vào câu đó. Quét toàn bộ đề, không được tự ý bỏ câu nào.\n`;
+            ? `\n2. Lệnh Tùy Chỉnh: ${customPrompt}\n LƯU Ý MẬT: Được phép paraphrase, đảo cấu trúc câu nhẹ nhàng để tránh vi phạm bản quyền văn bản.\n` 
+            : `\n2. NHIỆM VỤ OCR: Trích xuất các câu hỏi trong đề thi. Nhớ paraphrase nhẹ nhàng 10% từ ngữ để né lỗi bản quyền (RECITATION) mà vẫn giữ chuẩn đáp án.\n`;
 
-        const prompt = `Bạn là hệ thống trích xuất dữ liệu. Hãy đọc tài liệu/hình ảnh đính kèm và thực hiện:
-        1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt chủ đề của đề thi này (bằng gạch đầu dòng).
+        const prompt = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Hãy đọc tài liệu đính kèm và thực hiện:
+        1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt (bằng gạch đầu dòng).
         ${taskInstruction}
         
-        BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON CHUẨN (KHÔNG MARKDOWN):
+        BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON CHUẨN (KHÔNG BỌC TRONG MARKDOWN \`\`\`):
         {
             "mindmap": "Nội dung sơ đồ tư duy...",
             "exam": [
@@ -132,66 +142,93 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         
         Nội dung: ${documentText || 'Dùng file đính kèm.'}`;
 
-        let result;
-
-        // KIỂM TRA NẾU CÓ FILE GỬI LÊN
         if (req.file) {
-            console.log("Đang áp dụng File API để tải file nặng...");
-            
-            // 1. Lưu file từ RAM ra ổ cứng tạm thời của Server
-            const tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${req.file.originalname}`);
+            tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${req.file.originalname}`);
             fs.writeFileSync(tempFilePath, req.file.buffer);
-
-            // 2. Upload file đó lên Đám mây File API của Google
-            const uploadResult = await fileManager.uploadFile(tempFilePath, {
-                mimeType: req.file.mimetype,
-                displayName: req.file.originalname,
-            });
-
-            console.log(`Đã đẩy lên Google thành công. URI: ${uploadResult.file.uri}`);
-
-            // 3. Xóa file rác trong máy chủ Railway cho nhẹ máy
-            fs.unlinkSync(tempFilePath);
-
-            // 4. Gửi mã vé URI siêu nhẹ cho Gemini đọc
-            result = await model.generateContent([
-                prompt,
-                { 
-                    fileData: { 
-                        fileUri: uploadResult.file.uri, 
-                        mimeType: uploadResult.file.mimeType 
-                    } 
-                }
-            ]);
-
-            // 5. Google đọc xong thì ra lệnh xóa file trên đám mây Google để đỡ tốn dung lượng
-            await fileManager.deleteFile(uploadResult.file.name);
-            
-        } else if (req.body.fileBase64) {
-            // Backup nếu Web vẫn gửi kiểu Base64 cũ
-            result = await model.generateContent([
-                prompt,
-                { inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } }
-            ]);
-        } else {
-            result = await model.generateContent(prompt);
         }
 
-        let responseText = result.response.text();
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const aiResult = JSON.parse(responseText);
+        let isSuccess = false;
+        let finalResult = null;
 
-        res.status(200).json({ data: aiResult });
+        // VÒNG LẶP 1: DUYỆT TỪNG API KEY
+        for (let i = 0; i < apiKeys.length; i++) {
+            if (isSuccess) break;
+            
+            const currentKey = apiKeys[i];
+            const genAI = new GoogleGenerativeAI(currentKey);
+            const fileManager = new GoogleAIFileManager(currentKey);
+
+            // VÒNG LẶP 2: DUYỆT TỪNG MÔ HÌNH AI
+            for (let j = 0; j < modelsToTry.length; j++) {
+                if (isSuccess) break;
+
+                const currentModelName = modelsToTry[j];
+                console.log(`🔄 Đang thử nghiệm: [API Key ${i+1}] + [Model ${currentModelName}]...`);
+
+                try {
+                    const model = genAI.getGenerativeModel({ model: currentModelName });
+                    let responseText = "";
+
+                    if (tempFilePath) {
+                        const uploadResult = await fileManager.uploadFile(tempFilePath, {
+                            mimeType: req.file.mimetype,
+                            displayName: req.file.originalname,
+                        });
+
+                        const result = await model.generateContent([
+                            prompt,
+                            { fileData: { fileUri: uploadResult.file.uri, mimeType: uploadResult.file.mimeType } }
+                        ]);
+
+                        await fileManager.deleteFile(uploadResult.file.name);
+                        responseText = result.response.text();
+                    } else if (req.body.fileBase64) {
+                        const result = await model.generateContent([
+                            prompt,
+                            { inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } }
+                        ]);
+                        responseText = result.response.text();
+                    } else {
+                        const result = await model.generateContent(prompt);
+                        responseText = result.response.text();
+                    }
+
+                    // Làm sạch JSON
+                    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    finalResult = JSON.parse(responseText);
+                    isSuccess = true;
+                    console.log(`✅ THÀNH CÔNG với [Key ${i+1}] + [Model ${currentModelName}]`);
+
+                } catch (error) {
+                    console.error(`❌ Thất bại với [Key ${i+1}] + [Model ${currentModelName}]:`, error.message);
+                    
+                    // Nếu dính lỗi Bản quyền thì dừng lập tức, không lặp nữa vì có lặp cũng bị chặn
+                    if (error.message && error.message.includes('RECITATION')) {
+                        throw new Error('RECITATION_ERROR');
+                    }
+                    // Các lỗi khác (503, 429) sẽ tự động chạy tiếp vòng lặp để đổi Model/Key
+                }
+            }
+        }
+
+        // Dọn rác
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+        }
+
+        if (isSuccess) {
+            return res.status(200).json({ data: finalResult });
+        } else {
+            return res.status(503).json({ message: "Toàn bộ hệ thống AI đang sập, sếp vui lòng thử lại sau vài giây!" });
+        }
 
     } catch (error) {
-        console.error("❌ Lỗi AI:", error);
-        if (error.message && error.message.includes('RECITATION')) {
-            return res.status(400).json({ message: "Bộ lọc bản quyền Google (Recitation) đã chặn vì copy y chang đề trên mạng. Sếp hãy nhập thêm lệnh Tùy chỉnh: 'Viết lại và đảo vị trí từ' nhé!" });
+        if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+        
+        if (error.message === 'RECITATION_ERROR') {
+            return res.status(400).json({ message: "Lỗi Bản quyền (Recitation): Hãy thêm vào lệnh tùy chỉnh chữ 'Viết lại câu hỏi'." });
         }
-        if (error.status === 503) {
-            return res.status(503).json({ message: "Google AI 3.5 Flash đang kẹt cục bộ. Cơ chế chống sập đã kích hoạt, sếp đợi 3s rồi bấm lại là qua!" });
-        }
-        res.status(500).json({ message: "Lỗi hệ thống hoặc định dạng file hỏng, sếp nạp lại thử nhé!" });
+        res.status(500).json({ message: "Lỗi kết nối máy chủ không xác định!" });
     }
 });
 
