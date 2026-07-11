@@ -166,7 +166,7 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL MINDMAP & HÌNH ẢNH)</h1>
+    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 3.0 (FULL TÍNH NĂNG)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
 
@@ -965,7 +965,7 @@
                 toast(resData.message || "AI báo lỗi xử lý dữ liệu!", "error"); 
             }
         } catch(e) { 
-            toast("Thời gian phân tích quá lâu làm rớt mạng! AI có thể vẫn đang chạy ngầm, sếp vui lòng thử lại sau.", "error"); 
+            toast("Thời gian phân tích quá lâu làm rớt mạng trình duyệt! AI vẫn đang chạy ngầm trên Server, vui lòng đợi 1 phút rồi F5 tải lại trang.", "error"); 
         } 
     };
 
@@ -1070,6 +1070,11 @@
 
         questionsList.forEach((q, i) => { 
             let cleanQText = cleanQuestionText(q.questionText || "");
+            
+            let qTypeStr = String(q.type || "").trim().toLowerCase();
+            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai');
+            let displayType = isTF ? 'đúng sai' : 'nhiều lựa chọn';
+
             let imgHtml = "";
             if (q.image) {
                 imgHtml = `<div style="margin-top:10px; position:relative; display:inline-block; border: 2px solid var(--primary); border-radius:8px; padding:4px; background:white;">
@@ -1081,7 +1086,7 @@
             html += `
                 <div class="q-card" id="qd-${i}">
                     <button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-                    <p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type || 'Không xác định'}):</b></p>
+                    <p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${displayType}):</b></p>
                     <textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${cleanQText}</textarea>
                     
                     <div style="margin-top:10px; margin-bottom:15px;">
@@ -1092,24 +1097,26 @@
                     </div>
                 `; 
 
-            if(q.type === 'nhiều lựa chọn') { 
+            if(!isTF) { 
                 html += `<div style="margin-top:12px;">`; 
-                (q.options || []).forEach((o,j) => {
+                let optArr = (q.options && q.options.length > 0) ? q.options : ["A", "B", "C", "D"];
+                optArr.forEach((o,j) => {
                     let cleanOpt = cleanOptionText(o || ""); 
                     html += `<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${cleanOpt}" style="flex:1; padding:8px;"></div>`;
                 }); 
                 html += `<div style="margin-top:12px; display:inline-block; background:var(--bg-light); padding:8px 12px; border-radius:6px; border:1px solid var(--border);"><b>KEY ĐÁP ÁN:</b> <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||'A'}" style="width:50px; text-align:center; padding:4px;"></div>`;
                 html += `</div>`; 
-            } else if(q.type === 'đúng sai') { 
+            } else { 
                 html += `<div style="margin-top:12px;">`; 
-                (q.subOptions || []).forEach((s,j) => {
+                let subOptArr = (q.subOptions && q.subOptions.length > 0) ? q.subOptions : ["Mệnh đề 1", "Mệnh đề 2", "Mệnh đề 3", "Mệnh đề 4"];
+                subOptArr.forEach((s,j) => {
                     let cleanSubOpt = cleanOptionText(s || ""); 
                     let correctAns = (q.correctAnswers && q.correctAnswers[j]) ? q.correctAnswers[j] : 'D';
                     html += `<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${correctAns==='D'?'selected':''}>ĐÚNG</option><option value="S" ${correctAns==='S'?'selected':''}>SAI</option></select></div>`;
                 }); 
                 html += `</div>`; 
             } 
-            html += `</div>`; // CHỖ NÀY ĐÃ ĐƯỢC BỌC THÊM THẺ DIV ĐỂ TRÁNH LỖI SỌC VẰN DỒN CÂU HỎI
+            html += `</div>`; // ĐÓNG THẺ DIV CHÍNH CỦA QUESTION CARD 
         }); 
         $('qDrafts').innerHTML = html; 
 
@@ -1122,10 +1129,14 @@
         questionsList.forEach((q, i) => {
             if(!$(`qd-${i}`)) return;
             q.questionText = $(`eq-${i}`).value;
-            if(q.type === 'nhiều lựa chọn') {
+            
+            let qTypeStr = String(q.type || "").trim().toLowerCase();
+            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai');
+
+            if(!isTF) {
                 q.options = [$(`eo-${i}-0`)?.value||"", $(`eo-${i}-1`)?.value||"", $(`eo-${i}-2`)?.value||"", $(`eo-${i}-3`)?.value||""];
-                q.correctAnswer = $(`ek-${i}`).value.trim().toUpperCase();
-            } else if(q.type === 'đúng sai') {
+                q.correctAnswer = $(`ek-${i}`) ? $(`ek-${i}`).value.trim().toUpperCase() : "A";
+            } else {
                 q.subOptions = [$(`es-${i}-0`)?.value||"", $(`es-${i}-1`)?.value||"", $(`es-${i}-2`)?.value||"", $(`es-${i}-3`)?.value||""];
                 q.correctAnswers = [$(`ekd-${i}-0`)?.value||"D", $(`ekd-${i}-1`)?.value||"D", $(`ekd-${i}-2`)?.value||"D", $(`ekd-${i}-3`)?.value||"D"];
             }
@@ -1198,14 +1209,17 @@
 
             let imgHtmlReview = q.image ? `<img src="${q.image}" style="max-width:100%; max-height:250px; border-radius:8px; margin-bottom:10px; display:block; border:1px solid var(--border);">` : '';
 
+            let qTypeStr = String(q.type || "").trim().toLowerCase();
+            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai');
+
             h += `<div style="border-bottom: 1px solid var(--border); padding-bottom:15px; margin-bottom:15px;">
                     <b>Câu ${i+1}:</b> ${q.questionText}<br>
                     ${imgHtmlReview}`;
 
-            if(q.type === 'nhiều lựa chọn') {
+            if(!isTF) {
                 h += `Đã chọn: <b style="color:${color};">${picked}</b> | Đáp án đúng: <b>${q.correctAnswer}</b>`;
-            } else if(q.type === 'đúng sai') {
-                h += `Barem đúng: <b>${q.correctAnswers.join(', ')}</b><br>
+            } else {
+                h += `Barem đúng: <b>${(q.correctAnswers || []).join(', ')}</b><br>
                       Trình bày của HS: <b style="color:${color};">${picked}</b> (Ăn được ${ansObj ? ansObj.p : 0} điểm ý này)`;
             }
             h += `</div>`;
@@ -1484,6 +1498,8 @@
             let encodedCorrect = q.correctAnswer; h+=`<div class="game-q-card" id="sc-${i}" data-type="${q.type}">`;
 
             let cleanQTextHS = cleanQuestionText(q.questionText);
+            let qTypeStr = String(q.type || "").trim().toLowerCase();
+            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai');
             
             let imgHtmlHS = q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:8px; margin: 15px 0; border:1px solid #cbd5e1; display:block;">` : '';
 
@@ -1491,8 +1507,9 @@
                 ${imgHtmlHS}
                 <div id="qwrap-${i}">`;
 
-            if(q.type==='nhiều lựa chọn') { 
-                let opsWithState = q.options.map((optText, origIdx) => ({ text: optText, isCorrect: String.fromCharCode(65+origIdx) === q.correctAnswer }));
+            if(!isTF) { 
+                let optArr = (q.options && q.options.length > 0) ? q.options : ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"];
+                let opsWithState = optArr.map((optText, origIdx) => ({ text: optText, isCorrect: String.fromCharCode(65+origIdx) === (q.correctAnswer||'A') }));
                 let shuffledOps = shuffleArray(opsWithState); encodedCorrect = String.fromCharCode(65 + shuffledOps.findIndex(o => o.isCorrect));
                 shuffledOps.forEach((o, j) => {
                     const letter = String.fromCharCode(65+j); const tId = `tile-${i}-${j}`;
@@ -1506,10 +1523,12 @@
                         </div>`;
                 }); 
             }
-            else if(q.type==='đúng sai') { 
-                encodedCorrect = q.correctAnswers.join(',');
+            else { 
+                encodedCorrect = (q.correctAnswers && q.correctAnswers.length > 0) ? q.correctAnswers.join(',') : 'D,D,D,D';
+                let subOptArr = (q.subOptions && q.subOptions.length > 0) ? q.subOptions : ["Mệnh đề 1", "Mệnh đề 2", "Mệnh đề 3", "Mệnh đề 4"];
+                
                 h+=`<table><tr><th style="background:transparent; border:none; padding:8px;"></th><th style="width:80px;text-align:center; background:#dcfce7; color:#166534; border-radius:8px;">ĐÚNG</th><th style="width:80px;text-align:center; background:#fee2e2; color:#991b1b; border-radius:8px;">SAI</th></tr>`; 
-                q.subOptions.forEach((s,j)=> {
+                subOptArr.forEach((s,j)=> {
                     let cleanSubOptHS = cleanOptionText(s);
 
                     h+=`<tr><td style="border:none; padding:12px 0;"><div class="option-tile" style="margin:0;">${cleanSubOptHS}</div></td>
@@ -1538,12 +1557,15 @@
             let card = $(`sc-${i}`); let type = card.getAttribute('data-type'); let trueAns = card.getAttribute('data-ans'); let p = 0;
             let pickedLog = "";
 
-            if(type==='nhiều lựa chọn') { 
+            let qTypeStr = String(type || "").trim().toLowerCase();
+            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai');
+
+            if(!isTF) { 
                 const r = document.querySelector(`input[name="sa_${i}"]:checked`); 
                 pickedLog = r ? r.value : "";
                 if(pickedLog === trueAns) p=1; 
             }
-            else if(type==='đúng sai') { 
+            else { 
                 let correctArr = trueAns.split(','); let s=0; 
                 let pickedArr = [];
                 for(let j=0; j<4; j++) { 
