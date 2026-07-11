@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Khảo Thí AI - Nền Tảng Đánh Giá Năng Lực Chuản Quốc Tế</title>
-    <!-- Font Plus Jakarta Sans & FontAwesome -->
+    <title>Hệ Thống Khảo Thí AI - Nền Tảng Đánh Giá Năng Lực Chuẩn Quốc Tế</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -78,7 +77,7 @@
         .alert-info { background: linear-gradient(135deg, #eff6ff, #e0f2fe); border-color: #bfdbfe; color: #0369a1; }
         .alert-warning { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a; color: #92400e; }
         
-        /* RADAR IMAGE ALERT FOR TEACHERS (SIÊU ĐẸP) */
+        /* RADAR IMAGE ALERT FOR TEACHERS */
         .teacher-image-alert { background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%); border: 2px dashed #f43f5e; border-radius: 16px; padding: 1.8rem; margin-bottom: 2.2rem; display: none; position: relative; box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.1); animation: radarPulse 3s infinite; }
         @keyframes radarPulse { 0%, 100% { border-color: #f43f5e; box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.1); } 50% { border-color: #fb7185; box-shadow: 0 10px 30px -5px rgba(244, 63, 94, 0.25); } }
         .teacher-image-alert h3 { color: #e11d48; margin-bottom: 0.8rem; font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
@@ -159,7 +158,7 @@
     <main class="container">
         
         <!-- ================================================================= -->
-        <!-- PHẦN 1: HỆ THỐNG XÁC THỰC (BẢO MẬT TUYỆT ĐỐI - KHÔNG GỢI Ý PASS) -->
+        <!-- PHẦN 1: HỆ THỐNG XÁC THỰC -->
         <!-- ================================================================= -->
         <section id="auth-section" style="max-width: 480px; margin: 4rem auto;">
             <div class="card" style="box-shadow: var(--shadow-glow);">
@@ -182,7 +181,6 @@
                     <button onclick="handleLogin()" class="btn btn-primary btn-block" style="padding: 15px; font-size: 1.05rem; margin-top: 10px; border-radius: 12px;">
                         <span>Đăng Nhập Ngay</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
                     </button>
-                    <!-- ĐÃ TIÊU HỦY HOÀN TOÀN BẢNG GỢI Ý TÀI KHOẢN ADMIN ĐỂ BẢO MẬT -->
                 </div>
 
                 <!-- Form Đăng Ký (Dành riêng cho Học sinh) -->
@@ -190,11 +188,11 @@
                     <h2 style="text-align: center; color: var(--success); margin-bottom: 1.8rem; font-weight: 800; letter-spacing: -0.5px;">TẠO TÀI KHOẢN HỌC SINH</h2>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-id-card" style="color: var(--success);"></i> Họ và tên học sinh:</label>
-                        <input type="text" id="reg-name" class="form-control" placeholder="VD: Nguyễn Xuân Phúc">
+                        <input type="text" id="reg-name" class="form-control" placeholder="VD: Nguyễn Văn A">
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-user-tag" style="color: var(--success);"></i> Tên đăng nhập (Username):</label>
-                        <input type="text" id="reg-user" class="form-control" placeholder="VD: phuc_7a_2013">
+                        <input type="text" id="reg-user" class="form-control" placeholder="VD: nguyenvana_7a">
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-key" style="color: var(--success);"></i> Mật khẩu:</label>
@@ -217,22 +215,6 @@
                             <label class="form-label"><i class="fa-solid fa-school" style="color: var(--success);"></i> Lớp chi tiết:</label>
                             <input type="text" id="reg-class" class="form-control" placeholder="VD: 7A, 10D1...">
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label"><i class="fa-solid fa-heart" style="color: #e11d48;"></i> Môn học yêu thích nhất:</label>
-                        <select id="reg-fav-subject" class="form-select">
-                            <option value="Toán học">Toán học</option>
-                            <option value="Vật lí">Vật lí</option>
-                            <option value="Hóa học">Hóa học</option>
-                            <option value="Sinh học">Sinh học</option>
-                            <option value="Tin học">Tin học / Lập trình</option>
-                            <option value="Ngữ văn">Ngữ văn</option>
-                            <option value="Lịch sử">Lịch sử</option>
-                            <option value="Địa lí">Địa lí</option>
-                            <option value="Tiếng Anh">Tiếng Anh</option>
-                            <option value="GDCD">GDCD / Pháp luật</option>
-                            <option value="Công nghệ">Công nghệ</option>
-                        </select>
                     </div>
                     <button onclick="handleRegister()" class="btn btn-success btn-block" style="padding: 15px; font-size: 1.05rem; margin-top: 10px; border-radius: 12px;">
                         <span>Hoàn Tất Đăng Ký</span> <i class="fa-solid fa-check-circle"></i>
@@ -300,7 +282,7 @@
                 <!-- Bảng Danh Sách Người Dùng -->
                 <div class="card-header" style="margin-bottom: 1.2rem; padding-bottom: 0; border: none;">
                     <h3 class="card-title" style="font-size: 1.2rem;"><i class="fa-solid fa-users-gear" style="color: var(--primary);"></i> Danh sách thành viên trong hệ thống</h3>
-                    <button onclick="loadUserList()" class="btn btn-outline btn-sm"><i class="fa-solid fa-rotate-right"></i> Làm mới</button>
+                    <button onclick="loadUserList()" class="btn btn-outline btn-sm"><i class="fa-solid fa-rotate-right"></i> Làm mới API</button>
                 </div>
                 <div class="table-container">
                     <table class="table" id="admin-user-table">
@@ -415,7 +397,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title"><i class="fa-solid fa-laptop-code" style="color: var(--primary);"></i> KHO ĐỀ THI & LUYỆN TẬP TRỰC TUYẾN</h2>
-                        <span class="role-badge role-student" id="student-badge-class">Lớp: 7A</span>
+                        <span class="role-badge role-student" id="student-badge-class">Lớp: Chưa xác định</span>
                     </div>
 
                     <!-- Thanh bộ lọc đề thi -->
@@ -525,26 +507,12 @@
 
         // --- KHỞI TẠO HỆ THỐNG KHI TẢI TRANG ---
         window.addEventListener('DOMContentLoaded', () => {
-            initSampleDataIfEmpty();
             const sessionUser = localStorage.getItem('khaothi_active_user');
             if (sessionUser) {
                 loggedUser = JSON.parse(sessionUser);
                 renderMainDashboard();
             }
         });
-
-        // Tạo dữ liệu mẫu nếu CSDL LocalStorage trống
-        function initSampleDataIfEmpty() {
-            if (!localStorage.getItem('khaothi_users_db')) {
-                const sampleUsers = [
-                    { _id: 'ADMIN_01', fullname: 'Quản Trị Viên Hệ Thống', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() },
-                    { _id: 'TEACHER_01', fullname: 'Thầy Nguyễn Văn Toán', username: 'toan', password: '123', role: 'teacher', teachingSubject: 'Toán học', teachingClasses: '7A, 7B, 10D1', createdAt: Date.now() },
-                    { _id: 'TEACHER_02', fullname: 'Cô Trần Thị Vật Lí', username: 'ly', password: '123', role: 'teacher', teachingSubject: 'Vật lí', teachingClasses: '7A, 8A', createdAt: Date.now() },
-                    { _id: 'STUDENT_01', fullname: 'Nguyễn Xuân Phúc', username: 'phuc7a', password: '123', role: 'student', studentClass: '7A', grade: '7', favoriteSubject: 'Vật lí', createdAt: Date.now() }
-                ];
-                localStorage.setItem('khaothi_users_db', JSON.stringify(sampleUsers));
-            }
-        }
 
         // --- HÀM CHUYỂN TAB ĐĂNG NHẬP / ĐĂNG KÝ ---
         function switchAuthTab(tabName) {
@@ -561,58 +529,50 @@
             }
         }
 
-        // --- XỬ LÝ ĐĂNG NHẬP ---
+        // --- XỬ LÝ ĐĂNG NHẬP GỌI API THẬT MONGODB ---
         async function handleLogin() {
             const u = document.getElementById('login-user').value.trim();
             const p = document.getElementById('login-pass').value.trim();
             if (!u || !p) return alert("⚠️ Sếp vui lòng nhập đầy đủ Tên tài khoản và Mật khẩu!");
 
-            // Thử gọi API Backend Railway (nếu đang chạy online)
             try {
+                // Gọi thẳng về server.js của sếp
                 const res = await fetch('/api/dang-nhap', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: u, password: p })
                 });
+                const data = await res.json();
+                
                 if (res.ok) {
-                    const data = await res.json();
                     loggedUser = data.data;
                     localStorage.setItem('khaothi_active_user', JSON.stringify(loggedUser));
-                    return renderMainDashboard();
+                    renderMainDashboard();
+                } else {
+                    alert("❌ " + data.message);
                 }
             } catch (err) {
-                console.log("Mất kết nối Backend online, kích hoạt chế độ Fallback LocalStorage...");
-            }
-
-            // Chế độ Offline Fallback từ LocalStorage
-            const usersDb = JSON.parse(localStorage.getItem('khaothi_users_db')) || [];
-            const matchedUser = usersDb.find(user => user.username === u && user.password === p);
-            
-            if (matchedUser) {
-                loggedUser = matchedUser;
-                localStorage.setItem('khaothi_active_user', JSON.stringify(loggedUser));
-                renderMainDashboard();
-            } else {
-                alert("❌ Sai tên tài khoản hoặc mật khẩu! (Vui lòng liên hệ Quản trị viên để kiểm tra)");
+                alert("❌ Không thể kết nối tới Máy chủ. Sếp kiểm tra lại Server Railway đã chạy chưa nhé!");
             }
         }
 
-        // --- XỬ LÝ ĐĂNG KÝ HỌC SINH ---
+        // --- XỬ LÝ ĐĂNG KÝ HỌC SINH GỌI API THẬT MONGODB ---
         async function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const user = document.getElementById('reg-user').value.trim();
             const pass = document.getElementById('reg-pass').value.trim();
             const grade = document.getElementById('reg-grade').value;
             const stuClass = document.getElementById('reg-class').value.trim();
-            const favSub = document.getElementById('reg-fav-subject').value;
 
             if (!name || !user || !pass || !stuClass) return alert("⚠️ Sếp vui lòng điền đầy đủ thông tin đăng ký!");
 
             const newStudent = {
-                _id: 'STU_' + Date.now(),
-                fullname: name, username: user, password: pass,
-                role: 'student', grade: grade, studentClass: stuClass, favoriteSubject: favSub,
-                createdAt: Date.now()
+                fullname: name, 
+                username: user, 
+                password: pass,
+                role: 'student', 
+                grade: grade, 
+                studentClass: stuClass
             };
 
             try {
@@ -621,21 +581,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newStudent)
                 });
+                const data = await res.json();
+                
                 if (res.ok) {
                     alert("🎉 Đăng ký tài khoản học sinh thành công! Sếp có thể đăng nhập ngay.");
-                    return switchAuthTab('login');
+                    switchAuthTab('login');
+                } else {
+                    alert("❌ " + data.message);
                 }
             } catch (err) {
-                console.log("Fallback lưu Offline LocalStorage...");
+                alert("❌ Lỗi kết nối máy chủ! Hãy kiểm tra lại Server.");
             }
-
-            const usersDb = JSON.parse(localStorage.getItem('khaothi_users_db')) || [];
-            if (usersDb.some(u => u.username === user)) return alert("❌ Tên đăng nhập này đã tồn tại!");
-
-            usersDb.push(newStudent);
-            localStorage.setItem('khaothi_users_db', JSON.stringify(usersDb));
-            alert("🎉 Đăng ký tài khoản học sinh thành công! Hãy đăng nhập để trải nghiệm.");
-            switchAuthTab('login');
         }
 
         // --- ĐĂNG XUẤT ---
@@ -664,7 +620,7 @@
                 badge.className = 'role-badge role-admin';
                 badge.innerHTML = '<i class="fa-solid fa-user-shield"></i> Quản Trị Viên';
                 document.getElementById('dashboard-admin').classList.remove('hidden');
-                loadUserList();
+                loadUserList(); // Tải danh sách từ Server
             } 
             else if (loggedUser.role === 'teacher') {
                 badge.className = 'role-badge role-teacher';
@@ -677,48 +633,45 @@
             } 
             else {
                 badge.className = 'role-badge role-student';
-                badge.innerHTML = `<i class="fa-solid fa-user-graduate"></i> Học Sinh - Lớp ${loggedUser.studentClass || '7A'}`;
+                badge.innerHTML = `<i class="fa-solid fa-user-graduate"></i> Học Sinh - Lớp ${loggedUser.studentClass || 'N/A'}`;
                 document.getElementById('dashboard-student').classList.remove('hidden');
-                document.getElementById('student-badge-class').innerText = `Lớp: ${loggedUser.studentClass || '7A'} | Môn tủ: ${loggedUser.favoriteSubject || 'Vật lí'}`;
-                
-                // Tự động chọn filter môn yêu thích của học sinh
-                if (loggedUser.favoriteSubject) {
-                    const select = document.getElementById('student-filter-subject');
-                    if (Array.from(select.options).some(o => o.value === loggedUser.favoriteSubject)) {
-                        select.value = loggedUser.favoriteSubject;
-                    }
-                }
+                document.getElementById('student-badge-class').innerText = `Lớp: ${loggedUser.studentClass || 'N/A'}`;
                 renderStudentExamList();
             }
         }
 
         // =================================================================
-        // CHỨC NĂNG QUẢN TRỊ VIÊN (ADMIN FUNCTIONS)
+        // CHỨC NĂNG QUẢN TRỊ VIÊN GỌI API MONGODB (ADMIN FUNCTIONS)
         // =================================================================
-        function loadUserList() {
-            const usersDb = JSON.parse(localStorage.getItem('khaothi_users_db')) || [];
-            const tbody = document.getElementById('admin-user-tbody');
-            tbody.innerHTML = '';
+        async function loadUserList() {
+            try {
+                const res = await fetch('/api/admin/tat-ca-users');
+                const data = await res.json();
+                const tbody = document.getElementById('admin-user-tbody');
+                tbody.innerHTML = '';
 
-            usersDb.forEach(user => {
-                const tr = document.createElement('tr');
-                const roleClass = user.role === 'admin' ? 'role-admin' : (user.role === 'teacher' ? 'role-teacher' : 'role-student');
-                const dateStr = new Date(user.createdAt || Date.now()).toLocaleDateString('vi-VN');
-                
-                tr.innerHTML = `
-                    <td><strong>${user.fullname}</strong></td>
-                    <td><code>${user.username}</code></td>
-                    <td><span class="role-badge ${roleClass}" style="font-size: 0.75rem; padding: 4px 10px;">${user.role}</span></td>
-                    <td>${user.teachingSubject || user.studentClass || 'Toàn quyền'}</td>
-                    <td>${dateStr}</td>
-                    <td>
-                        ${user.username !== 'admin' ? 
-                            `<button onclick="adminDeleteUser('${user._id || user.username}')" class="btn btn-danger btn-sm" title="Xóa tài khoản"><i class="fa-solid fa-trash-can"></i> Xóa</button>` 
-                            : `<span style="color:var(--muted); font-size:0.85rem; font-weight: 600;"><i class="fa-solid fa-lock"></i> Mặc định</span>`}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+                data.data.forEach(user => {
+                    const tr = document.createElement('tr');
+                    const roleClass = user.role === 'admin' ? 'role-admin' : (user.role === 'teacher' ? 'role-teacher' : 'role-student');
+                    const dateStr = new Date(user.createdAt || Date.now()).toLocaleDateString('vi-VN');
+                    
+                    tr.innerHTML = `
+                        <td><strong>${user.fullname}</strong></td>
+                        <td><code>${user.username}</code></td>
+                        <td><span class="role-badge ${roleClass}" style="font-size: 0.75rem; padding: 4px 10px;">${user.role}</span></td>
+                        <td>${user.teachingSubject || user.studentClass || 'Toàn quyền'}</td>
+                        <td>${dateStr}</td>
+                        <td>
+                            ${user.username !== 'admin' ? 
+                                `<button onclick="adminDeleteUser('${user._id}')" class="btn btn-danger btn-sm" title="Xóa tài khoản"><i class="fa-solid fa-trash-can"></i> Xóa</button>` 
+                                : `<span style="color:var(--muted); font-size:0.85rem; font-weight: 600;"><i class="fa-solid fa-lock"></i> Mặc định</span>`}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Lỗi tải danh sách người dùng từ Database.");
+            }
         }
 
         async function adminCreateTeacher() {
@@ -731,9 +684,12 @@
             if (!name || !user || !pass) return alert("⚠️ Sếp vui lòng điền đầy đủ Họ tên, Username và Mật khẩu cho Giáo viên!");
 
             const newTeacher = {
-                _id: 'TCH_' + Date.now(),
-                fullname: name, username: user, password: pass, role: 'teacher',
-                teachingSubject: subject, teachingClasses: classes, createdAt: Date.now()
+                fullname: name, 
+                username: user, 
+                password: pass, 
+                role: 'teacher',
+                teachingSubject: subject, 
+                teachingClasses: classes
             };
 
             try {
@@ -742,36 +698,42 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newTeacher)
                 });
+                const data = await res.json();
+                
                 if (res.ok) {
                     alert("🎉 Đã tạo tài khoản Giáo viên mới trên Server thành công!");
-                    return loadUserList();
+                    document.getElementById('gv-name').value = '';
+                    document.getElementById('gv-user').value = '';
+                    document.getElementById('gv-pass').value = '';
+                    loadUserList();
+                } else {
+                    alert("❌ " + data.message);
                 }
-            } catch (err) { console.log("Lưu offline..."); }
-
-            const usersDb = JSON.parse(localStorage.getItem('khaothi_users_db')) || [];
-            if (usersDb.some(u => u.username === user)) return alert("❌ Tên đăng nhập này đã tồn tại trong hệ thống!");
-
-            usersDb.push(newTeacher);
-            localStorage.setItem('khaothi_users_db', JSON.stringify(usersDb));
-            alert("🎉 Đã tạo tài khoản Giáo viên thành công!");
-            
-            // Clear form
-            document.getElementById('gv-name').value = '';
-            document.getElementById('gv-user').value = '';
-            document.getElementById('gv-pass').value = '';
-            loadUserList();
+            } catch (err) {
+                alert("❌ Lỗi kết nối Máy chủ, không thể tạo tài khoản.");
+            }
         }
 
-        function adminDeleteUser(targetId) {
-            if (!confirm("⚠️ Sếp có chắc chắn muốn xóa vĩnh viễn tài khoản này khỏi hệ thống?")) return;
-            let usersDb = JSON.parse(localStorage.getItem('khaothi_users_db')) || [];
-            usersDb = usersDb.filter(u => (u._id !== targetId) && (u.username !== targetId));
-            localStorage.setItem('khaothi_users_db', JSON.stringify(usersDb));
-            loadUserList();
+        async function adminDeleteUser(userId) {
+            if (!confirm("⚠️ Sếp có chắc chắn muốn xóa vĩnh viễn tài khoản này khỏi hệ thống Database không?")) return;
+            try {
+                const res = await fetch('/api/admin/xoa-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId })
+                });
+                if (res.ok) {
+                    loadUserList();
+                } else {
+                    alert("❌ Lỗi từ server khi xóa user.");
+                }
+            } catch (err) {
+                alert("❌ Mất kết nối server!");
+            }
         }
 
         // =================================================================
-        // CHỨC NĂNG GIÁO VIÊN: OCR & HÌNH ẢNH (TEACHER FUNCTIONS)
+        // CHỨC NĂNG GIÁO VIÊN: OCR ĐỀ THI (TEACHER FUNCTIONS)
         // =================================================================
         async function teacherScanExam() {
             const fileInput = document.getElementById('teacher-file-input');
@@ -785,7 +747,7 @@
             formData.append('file', fileInput.files[0]);
             formData.append('customPrompt', customPrompt);
             
-            // 🔥 TỰ ĐỘNG GỬI MÔN HỌC CỦA GV XUỐNG BACKEND ĐỂ AI LÁCH BẢN QUYỀN CHUẨN MÔN
+            // TỰ ĐỘNG GỬI MÔN HỌC CỦA GV XUỐNG BACKEND ĐỂ LÁCH BẢN QUYỀN
             formData.append('teachingSubject', loggedUser.teachingSubject || "Chung");
 
             document.getElementById('teacher-result-section').classList.add('hidden');
@@ -805,32 +767,10 @@
                     alert("❌ Lỗi từ AI: " + (data.message || "Không thể phân tích đề thi."));
                 }
             } catch (err) {
-                console.log("Mất kết nối Backend, kích hoạt tạo đề mẫu Mô phỏng AI Offline...");
-                setTimeout(() => {
-                    currentOcrExamData = generateMockAiData(loggedUser.teachingSubject || "Vật lí");
-                    renderTeacherOcrResults();
-                    alert("ℹ️ [Chế độ Mô phỏng Offline]: Đã tạo dữ liệu OCR mẫu vì không kết nối được máy chủ Railway.");
-                }, 1500);
+                alert("❌ Mất kết nối Backend. Hãy kiểm tra Railway.");
             } finally {
                 document.getElementById('loading-overlay').style.display = 'none';
             }
-        }
-
-        // Tạo dữ liệu mô phỏng khi test offline
-        function generateMockAiData(subject) {
-            return {
-                mindmap: `- Chủ đề chính: Ôn tập chương trình ${subject} lớp 7\n- Phần 1: Lý thuyết cơ bản và các định luật bảo toàn\n- Phần 2: Bài tập vận dụng tính toán thông số kỹ thuật\n- Phần 3: Trắc nghiệm đúng sai kỹ năng thực hành thí nghiệm`,
-                teacher_image_notes: [
-                    { cau_hien_tai: "Câu 2", cau_goc: "Tương đương Câu 15 đề gốc", mo_ta_hinh_anh_can_chen: "Sơ đồ mạch điện song song gồm 2 bóng đèn và 1 ampe kế." },
-                    { cau_hien_tai: "Câu 4", cau_goc: "Tương đương Câu 28 đề gốc", mo_ta_hinh_anh_can_chen: "Biểu đồ sự phụ thuộc của cường độ dòng điện vào hiệu điện thế." }
-                ],
-                exam: [
-                    { type: "nhiều lựa chọn", questionText: `Đơn vị đo hợp pháp của cường độ dòng điện trong hệ đo lường SI đối với môn ${subject} là gì?`, options: ["A. Ampe (A)", "B. Vôn (V)", "C. Ôm (Ω)", "D. Oát (W)"], correctAnswer: "A" },
-                    { type: "nhiều lựa chọn", questionText: "Quan sát sơ đồ mạch điện bên dưới. Khi công tắc K mở, bóng đèn Đ1 và Đ2 sẽ có trạng thái như thế nào?", options: ["A. Cả hai bóng đều sáng bình thường", "B. Cả hai bóng đều tắt", "C. Đèn Đ1 sáng, đèn Đ2 tắt", "D. Đèn Đ1 tắt, đèn Đ2 sáng"], correctAnswer: "B" },
-                    { type: "đúng sai", questionText: "Đánh giá tính đúng/sai của các phát biểu sau đây về tác dụng của dòng điện:", subOptions: ["Dòng điện đi qua dây tóc bóng đèn làm dây tóc nóng lên tới nhiệt độ cao và phát sáng (Tác dụng nhiệt và quang).", "Dòng điện chạy qua cuộn dây dẫn quấn quanh lõi sắt non có thể hút các vụn giấy hoặc đồng (Tác dụng từ).", "Dòng điện chạy qua dung dịch muối đồng sunfat (CuSO4) làm tách đồng ra khỏi dung dịch (Tác dụng hóa học).", "Dòng điện có cường độ cực nhỏ đi qua cơ thể người không bao giờ gây ra bất kỳ tác dụng sinh lý nào."], correctAnswers: ["D", "S", "D", "S"] },
-                    { type: "nhiều lựa chọn", questionText: "Dựa vào đồ thị biểu diễn dưới đây, hãy cho biết giá trị điện trở R của dây dẫn có số đo bằng bao nhiêu?", options: ["A. R = 5 Ω", "B. R = 10 Ω", "C. R = 15 Ω", "D. R = 20 Ω"], correctAnswer: "B" }
-                ]
-            };
         }
 
         // --- RENDER KẾT QUẢ OCR CHO GIÁO VIÊN ---
@@ -892,7 +832,7 @@
                         html += `
                             <div class="option-item ${isCorrect ? 'correct-ans' : ''}">
                                 <span>${opt}</span>
-                                ${isCorrect ? '<i class="fa-solid fa-circle-check" title="Đáp án đúng"></i>' : ''}
+                                ${isCorrect ? '<i class="fa-solid fa-check-circle" title="Đáp án đúng"></i>' : ''}
                             </div>
                         `;
                     });
@@ -948,7 +888,7 @@
             }
         }
 
-        // Lưu đề thi vào Ngân hàng đề
+        // Lưu đề thi vào Ngân hàng đề (Hiện tại dùng LocalStorage làm Kho đề)
         function teacherSaveExamBank() {
             if (!currentOcrExamData) return alert("⚠️ Chưa có dữ liệu đề thi!");
             const titleInput = document.getElementById('teacher-save-title').value.trim();
