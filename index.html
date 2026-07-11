@@ -77,7 +77,6 @@
         .user-item { padding: 12px 20px 12px 40px; border-bottom: 1px solid var(--bg-light); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; }
         .user-item:hover { background: #f8fafc; padding-left: 45px; }
 
-        .q-card { background: white; border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 24px; margin-top: 20px; border-radius: 8px; }
         .q-card { background: white; border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 24px; margin-top: 20px; border-radius: 8px; position:relative; }
         .edit-in { background: white !important; border: 1px dashed #94a3b8 !important; color: var(--primary); font-weight: 600; }
         table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
@@ -135,19 +134,8 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .grade-section { margin-bottom: 40px; }
-        .grade-title { 
-            font-size: 18px; font-weight: 800; color: var(--primary); 
-            background: #eef2ff; padding: 16px 24px; border-radius: 12px; 
-            margin-bottom: 20px; display:flex; align-items:center; justify-content: space-between; 
-            border: 1px solid #c7d2fe; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
         .grade-title { font-size: 18px; font-weight: 800; color: var(--primary); background: #eef2ff; padding: 16px 24px; border-radius: 12px; margin-bottom: 20px; display:flex; align-items:center; justify-content: space-between; border: 1px solid #c7d2fe; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .grade-title .gt-left { display:flex; align-items:center; gap:10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .grade-title span { 
-            background: white; color: var(--primary); padding: 6px 16px; 
-            border-radius: 8px; font-size: 13px; font-weight: 700; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e0e7ff;
-        }
         .grade-title span { background: white; color: var(--primary); padding: 6px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e0e7ff; }
         .grade-title.review { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
         .grade-title.review span { color: #059669; border-color: #d1fae5; }
@@ -178,7 +166,6 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL MINDMAP)</h1>
     <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL MINDMAP & HÌNH ẢNH)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
@@ -206,7 +193,6 @@
     <div id="adminPanel" class="panel card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;">
             <h2 class="section-title" style="margin:0; border:none; padding:0;"><i class="fa-solid fa-shield-halved"></i> QUẢN TRỊ HỆ THỐNG</h2>
-            <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Đóng phiên</button>
             <button class="btn-outline" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
         </div>
         <div style="display:flex; gap:30px;">
@@ -266,7 +252,6 @@
                     <i class="fa-solid fa-robot"></i> AI Sáng Tác Đề
                 </div>
                 <div class="mode-btn" id="modeScan" onclick="setMode('scan')">
-                    <i class="fa-solid fa-camera-viewfinder"></i> Quét Ảnh Đề (Azota)
                     <i class="fa-solid fa-camera-viewfinder"></i> Quét Ảnh Đề (100%)
                 </div>
                 <div class="mode-btn" id="modeManual" onclick="setMode('manual')">
@@ -286,7 +271,6 @@
                 <div style="display:flex; gap:15px;">
                     <div class="form-group" style="flex:1;"><label>Lớp giao bài:</label><select id="tClass"></select></div>
                     <div class="form-group" style="flex:1.5;">
-                        <label>Phân loại chuyên mục (Nhập tự do hoặc chọn):</label>
                         <label>Phân loại chuyên mục (Nhập tự do):</label>
                         <input type="text" id="tCategory" list="catHints" placeholder="VD: Chương 1, Giữa kì, Chuyên đề...">
                         <datalist id="catHints">
@@ -307,14 +291,12 @@
 
                 <div id="aiComponents">
                     <div class="form-group" id="promptArea">
-                        <label style="color:var(--primary); font-size:15px;"><i class="fa-solid fa-terminal"></i> Lệnh AI tùy chỉnh (Tùy chọn):</label>
-                        <textarea id="tCustomPrompt" rows="2" placeholder="VD: Soạn cho tôi 5 câu khó, tập trung vào kiến thức nâng cao..." style="border-color:#a5b4fc; background:#eef2ff;"></textarea>
                         <label style="color:var(--primary); font-size:15px;"><i class="fa-solid fa-terminal"></i> Lệnh AI tùy chỉnh (Để trống nếu muốn copy y nguyên đề):</label>
                         <textarea id="tCustomPrompt" rows="2" placeholder="VD: Hãy đảo vị trí các từ một chút xíu để né bản quyền..." style="border-color:#a5b4fc; background:#eef2ff;"></textarea>
                     </div>
 
                     <div class="form-group" id="fileUploadArea">
-                        <label id="uploadLabel">Nạp học liệu gốc để AI sáng tác (Tài liệu Word, PDF, Ảnh):</label>
+                        <label id="uploadLabel">Nạp học liệu gốc để AI đọc và sáng tác (Tài liệu Word, PDF, Ảnh):</label>
                         <div id="dropZone" class="drop-zone">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
                             <p id="dropZoneText">Kéo thả File hoặc Thư mục vào đây để tải lên</p>
@@ -339,13 +321,6 @@
 
             <div id="tReview" class="hidden" style="border:1px solid var(--primary); border-radius:8px; padding:24px; margin-top:24px;">
                 <h3 style="color:var(--primary); margin-top:0;"><i class="fa-solid fa-list-check"></i> THẨM ĐỊNH VÀ PHÊ DUYỆT</h3>
-
-                <!-- KHUNG BÁO CÁO HÌNH ẢNH DÀNH CHO GIÁO VIÊN -->
-                <div id="teacher-image-alert-box" style="display: none; background: #fff1f2; border: 2px dashed #f43f5e; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
-                    <h3 style="color: #e11d48; margin-top: 0; margin-bottom: 10px; font-size: 16px;"><i class="fa-solid fa-triangle-exclamation"></i> BÁO CÁO CẦN GẮN HÌNH ẢNH (CHỈ GV THẤY)</h3>
-                    <p style="color: #9f1239; margin-bottom: 10px; font-size: 14px;">AI phát hiện các câu sau bị thiếu hình ảnh/sơ đồ từ đề gốc. Sếp vui lòng cắt và đính kèm lại nhé:</p>
-                    <ul id="teacher-image-notes-list" style="padding-left: 20px; color: #be123c; font-size: 14px; margin: 0;"></ul>
-                </div>
 
                 <div id="qDrafts"></div>
 
@@ -476,12 +451,9 @@
         } else if (mode === 'scan') {
             $('modeScan').classList.add('active');
             $('aiComponents').style.display = 'block';
-            $('promptArea').style.display = 'none'; 
-            $('uploadLabel').innerHTML = '<span style="color:var(--danger);"><i class="fa-solid fa-camera"></i> Tải file Đề Thi có sẵn để AI quét và trích xuất (Ảnh JPG/PNG, PDF, Word):</span>';
             $('promptArea').style.display = 'block'; 
             $('uploadLabel').innerHTML = '<span style="color:var(--danger);"><i class="fa-solid fa-camera"></i> Tải file Đề Thi có sẵn để AI quét 100% (Ảnh JPG/PNG, PDF, Word):</span>';
             $('dropZoneText').innerText = "Kéo thả Ảnh chụp đề thi hoặc PDF vào đây";
-            $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-camera-viewfinder"></i> QUÉT VÀ BÓC TÁCH ĐỀ (AZOTA)';
             $('btnSubmitMode').innerHTML = '<i class="fa-solid fa-camera-viewfinder"></i> QUÉT VÀ BÓC TÁCH 100% CHỮ';
             $('btnSubmitMode').className = 'btn-danger btn-full';
         } else if (mode === 'manual') {
