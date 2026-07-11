@@ -166,7 +166,7 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL MINDMAP & HÌNH ẢNH)</h1>
+    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 3.0 (FULL TÍNH NĂNG AI)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
 
@@ -321,6 +321,11 @@
 
             <div id="tReview" class="hidden" style="border:1px solid var(--primary); border-radius:8px; padding:24px; margin-top:24px;">
                 <h3 style="color:var(--primary); margin-top:0;"><i class="fa-solid fa-list-check"></i> THẨM ĐỊNH VÀ PHÊ DUYỆT</h3>
+
+                <!-- KHUNG BÁO CÁO HÌNH ẢNH DÀNH CHO GIÁO VIÊN -->
+                <div id="teacher-image-alert-box" style="display: none; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px dashed #f43f5e; background: #fff1f2;">
+                    <!-- Nội dung Cảnh báo sẽ được JS tự động điền vào đây -->
+                </div>
 
                 <div id="qDrafts"></div>
 
@@ -669,6 +674,7 @@
 
         toast("Đang kết nối Server...", "loading"); 
 
+        // GỌI THẲNG API BACKEND
         try { 
             const res = await fetch(`${API}/api/dang-nhap`, { 
                 method:'POST', 
@@ -698,7 +704,7 @@
                 toast(data.message, "error"); 
             }
         } catch(e) { 
-            toast("Máy chủ đang sleep, vui lòng đợi 30s", "warn"); 
+            toast("Máy chủ đang sleep, vui lòng đợi chút rồi thử lại", "warn"); 
         } 
     };
 
@@ -1031,21 +1037,31 @@
     const renderDraft = () => { 
         $('qDrafts').innerHTML=""; 
         
-        // BẬT KHUNG CẢNH BÁO HÌNH ẢNH NẾU AI PHÁT HIỆN
+        // BẬT KHUNG CẢNH BÁO HÌNH ẢNH
         const alertBox = $('teacher-image-alert-box');
         const alertList = $('teacher-image-notes-list');
         if (alertBox && alertList) {
             alertList.innerHTML = '';
             if (drafts.teacher_image_notes && drafts.teacher_image_notes.length > 0) {
-                alertBox.style.display = 'block';
+                // Hiển thị khung màu đỏ nhắc nhở
+                alertBox.style.borderColor = '#f43f5e';
+                alertBox.style.background = '#fff1f2';
+                alertBox.innerHTML = `<h3 style="color: #e11d48; margin-top: 0; margin-bottom: 10px; font-size: 16px;"><i class="fa-solid fa-triangle-exclamation"></i> BÁO CÁO CẦN GẮN HÌNH ẢNH (CHỈ GV THẤY)</h3><p style="color: #9f1239; margin-bottom: 10px; font-size: 14px;">AI phát hiện các câu sau bị thiếu hình/sơ đồ từ đề gốc. Sếp vui lòng cắt và đính kèm lại vào đúng câu nhé:</p><ul id="teacher-image-notes-list" style="padding-left: 20px; color: #be123c; font-size: 14px; margin: 0;"></ul>`;
+                
+                const newList = $('teacher-image-notes-list');
                 drafts.teacher_image_notes.forEach(note => {
                     const li = document.createElement('li');
                     li.style.marginBottom = '8px';
                     li.innerHTML = `<strong>${note.cau_hien_tai}</strong> <em>(${note.cau_goc})</em>: <span style="color:#e11d48; font-weight:bold;">${note.mo_ta_hinh_anh_can_chen}</span>`;
-                    alertList.appendChild(li);
+                    newList.appendChild(li);
                 });
+                alertBox.style.display = 'block';
             } else {
-                alertBox.style.display = 'none';
+                // Hiển thị khung màu xanh thông báo không cần hình
+                alertBox.style.display = 'block';
+                alertBox.style.borderColor = '#10b981';
+                alertBox.style.background = '#f0fdf4';
+                alertBox.innerHTML = `<h3 style="color: #059669; margin-top: 0; margin-bottom: 5px; font-size: 16px;"><i class="fa-solid fa-circle-check"></i> ĐỀ THI HOÀN HẢO</h3><p style="color: #047857; margin-bottom: 0; font-size: 14px;">Trí tuệ nhân tạo xác nhận đề thi này không có câu hỏi nào cần bổ sung sơ đồ hoặc hình ảnh.</p><ul id="teacher-image-notes-list" style="display:none;"></ul>`;
             }
         }
 
@@ -1080,38 +1096,38 @@
                            </div>`;
             }
 
-            html += `<div class="q-card" id="qd-${i}">
-                        <button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px;"><i class="fa-solid fa-trash"></i></button>
-                        <p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p>
-                        <textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${cleanQText}</textarea>
-                        
-                        <!-- NÚT UPLOAD ẢNH CHO GIÁO VIÊN -->
-                        <div style="margin-top:10px; margin-bottom:15px;">
-                            <input type="file" id="qimg-${i}" accept="image/*" style="display:none;" onchange="attachImage(${i}, this)">
-                            <button class="btn-outline" style="padding:6px 12px; font-size:12px; background:#eef2ff;" onclick="$('qimg-${i}').click()"><i class="fa-solid fa-image"></i> Đính kèm ảnh cho câu này</button>
-                            <br>
-                            ${imgHtml}
-                        </div>
-                    `; 
+            html += `
+                <div class="q-card" id="qd-${i}">
+                    <button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                    <p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p>
+                    <textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${cleanQText}</textarea>
+                    
+                    <!-- NÚT UPLOAD ẢNH CHO GIÁO VIÊN -->
+                    <div style="margin-top:10px; margin-bottom:15px;">
+                        <input type="file" id="qimg-${i}" accept="image/*" style="display:none;" onchange="attachImage(${i}, this)">
+                        <button class="btn-outline" style="padding:6px 12px; font-size:12px; background:#eef2ff;" onclick="$('qimg-${i}').click()"><i class="fa-solid fa-image"></i> Đính kèm ảnh cho câu này</button>
+                        <br>
+                        ${imgHtml}
+                    </div>
+                `; 
 
             if(q.type==='nhiều lựa chọn') { 
-                html+=`<div style="margin-top:12px;">`; 
-                html+=`<div>`; 
+                html += `<div style="margin-top:12px;">`; 
                 q.options.forEach((o,j) => {
                     let cleanOpt = cleanOptionText(o); 
-                    html+=`<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${cleanOpt}" style="flex:1; padding:8px;"></div>`;
+                    html += `<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${cleanOpt}" style="flex:1; padding:8px;"></div>`;
                 }); 
-                html+=`<div style="margin-top:12px; display:inline-block; background:var(--bg-light); padding:8px 12px; border-radius:6px; border:1px solid var(--border);"><b>KEY ĐÁP ÁN:</b> <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||'A'}" style="width:50px; text-align:center; padding:4px;"></div></div>`; 
+                html += `<div style="margin-top:12px; display:inline-block; background:var(--bg-light); padding:8px 12px; border-radius:6px; border:1px solid var(--border);"><b>KEY ĐÁP ÁN:</b> <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||'A'}" style="width:50px; text-align:center; padding:4px;"></div>`;
+                html += `</div>`; 
             } else if(q.type==='đúng sai') { 
-                html+=`<div style="margin-top:12px;">`; 
-                html+=`<div>`; 
+                html += `<div style="margin-top:12px;">`; 
                 q.subOptions.forEach((s,j) => {
                     let cleanSubOpt = cleanOptionText(s); 
-                    html+=`<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${q.correctAnswers && q.correctAnswers[j]==='D'?'selected':''}>ĐÚNG</option><option value="S" ${q.correctAnswers && q.correctAnswers[j]==='S'?'selected':''}>SAI</option></select></div>`;
+                    html += `<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${q.correctAnswers && q.correctAnswers[j]==='D'?'selected':''}>ĐÚNG</option><option value="S" ${q.correctAnswers && q.correctAnswers[j]==='S'?'selected':''}>SAI</option></select></div>`;
                 }); 
-                html+=`</div>`; 
+                html += `</div>`; 
             } 
-            html += `</div>`; 
+            html += `</div>`; // ĐÓNG THẺ DIV CHÍNH CỦA QUESTION CARD (CHỖ NÀY LÀ MẤU CHỐT SỬA LỖI)
         }); 
         $('qDrafts').innerHTML = html; 
 
