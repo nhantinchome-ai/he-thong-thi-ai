@@ -166,7 +166,7 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 3.0 (FULL TÍNH NĂNG AI)</h1>
+    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 2.0 (BẢN FULL MINDMAP & HÌNH ẢNH)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
 
@@ -323,9 +323,7 @@
                 <h3 style="color:var(--primary); margin-top:0;"><i class="fa-solid fa-list-check"></i> THẨM ĐỊNH VÀ PHÊ DUYỆT</h3>
 
                 <!-- KHUNG BÁO CÁO HÌNH ẢNH DÀNH CHO GIÁO VIÊN -->
-                <div id="teacher-image-alert-box" style="display: none; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px dashed #f43f5e; background: #fff1f2;">
-                    <!-- Nội dung Cảnh báo sẽ được JS tự động điền vào đây -->
-                </div>
+                <div id="teacher-image-alert-box" style="display: none; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px dashed #f43f5e; background: #fff1f2;"></div>
 
                 <div id="qDrafts"></div>
 
@@ -477,7 +475,6 @@
             switchTeaTab('rade');
             $('tInput').style.display='none'; 
             $('tReview').style.display='block'; 
-            $('qDrafts').innerHTML=""; 
             renderDraft();
             toast("Đã vào chế độ tự gõ đề!", "success");
         } else {
@@ -674,7 +671,6 @@
 
         toast("Đang kết nối Server...", "loading"); 
 
-        // GỌI THẲNG API BACKEND
         try { 
             const res = await fetch(`${API}/api/dang-nhap`, { 
                 method:'POST', 
@@ -956,7 +952,6 @@
                 body:JSON.stringify(payload) 
             }); 
 
-            // Lấy DATA TỪ BACKEND để hiển thị lỗi Bản Quyền nếu có
             const resData = await res.json();
 
             if(res.ok) { 
@@ -970,7 +965,7 @@
                 toast(resData.message || "AI báo lỗi xử lý dữ liệu!", "error"); 
             }
         } catch(e) { 
-            toast("Đứt mạng hoặc File nặng làm máy chủ sập!", "error"); 
+            toast("Thời gian phân tích quá lâu làm rớt mạng! AI có thể vẫn đang chạy ngầm, sếp vui lòng thử lại sau.", "error"); 
         } 
     };
 
@@ -999,7 +994,6 @@
         toast("Đã xóa đề!", "success");
     };
 
-    // BỘ LỌC REGEX XÓA RÁC Ở ĐẦU CÂU TỐI ƯU HƠN
     const cleanQuestionText = (text) => {
         if (!text) return "";
         return text.replace(/^(Câu|Bài|Question)\s*\d+[\.\:\-]?\s*/i, '').trim();
@@ -1007,11 +1001,9 @@
 
     const cleanOptionText = (text) => {
         if (!text) return "";
-        // Xóa "Ý a:", "A.", "a)" ở đầu đáp án
         return text.replace(/^[A-Da-dÝý]\s*[\.\:\)]\s*/i, '').replace(/^[A-Da-d][\.\:\)]\s*/, '').trim();
     };
 
-    // TÍNH NĂNG UPLOAD VÀ LƯU HÌNH ẢNH BASE64 VÀO TỪNG CÂU HỎI
     window.attachImage = (idx, el) => {
         const file = el.files[0];
         if(!file) return;
@@ -1037,36 +1029,29 @@
     const renderDraft = () => { 
         $('qDrafts').innerHTML=""; 
         
-        // BẬT KHUNG CẢNH BÁO HÌNH ẢNH
+        // BẬT KHUNG CẢNH BÁO HÌNH ẢNH NẾU AI PHÁT HIỆN
         const alertBox = $('teacher-image-alert-box');
-        const alertList = $('teacher-image-notes-list');
-        if (alertBox && alertList) {
-            alertList.innerHTML = '';
-            if (drafts.teacher_image_notes && drafts.teacher_image_notes.length > 0) {
-                // Hiển thị khung màu đỏ nhắc nhở
+        if (alertBox) {
+            if (drafts && drafts.teacher_image_notes && drafts.teacher_image_notes.length > 0) {
+                let noteHtml = `<h3 style="color: #e11d48; margin-top: 0; margin-bottom: 10px; font-size: 16px;"><i class="fa-solid fa-triangle-exclamation"></i> BÁO CÁO CẦN GẮN HÌNH ẢNH (CHỈ GV THẤY)</h3><p style="color: #9f1239; margin-bottom: 10px; font-size: 14px;">AI phát hiện các câu sau bị thiếu hình/sơ đồ từ đề gốc. Sếp vui lòng cắt và đính kèm lại vào đúng câu nhé:</p><ul style="padding-left: 20px; color: #be123c; font-size: 14px; margin: 0;">`;
+                drafts.teacher_image_notes.forEach(note => {
+                    noteHtml += `<li style="margin-bottom:8px;"><strong>${note.cau_hien_tai}</strong> <em>(${note.cau_goc})</em>: <span style="color:#e11d48; font-weight:bold;">${note.mo_ta_hinh_anh_can_chen}</span></li>`;
+                });
+                noteHtml += `</ul>`;
+                alertBox.innerHTML = noteHtml;
                 alertBox.style.borderColor = '#f43f5e';
                 alertBox.style.background = '#fff1f2';
-                alertBox.innerHTML = `<h3 style="color: #e11d48; margin-top: 0; margin-bottom: 10px; font-size: 16px;"><i class="fa-solid fa-triangle-exclamation"></i> BÁO CÁO CẦN GẮN HÌNH ẢNH (CHỈ GV THẤY)</h3><p style="color: #9f1239; margin-bottom: 10px; font-size: 14px;">AI phát hiện các câu sau bị thiếu hình/sơ đồ từ đề gốc. Sếp vui lòng cắt và đính kèm lại vào đúng câu nhé:</p><ul id="teacher-image-notes-list" style="padding-left: 20px; color: #be123c; font-size: 14px; margin: 0;"></ul>`;
-                
-                const newList = $('teacher-image-notes-list');
-                drafts.teacher_image_notes.forEach(note => {
-                    const li = document.createElement('li');
-                    li.style.marginBottom = '8px';
-                    li.innerHTML = `<strong>${note.cau_hien_tai}</strong> <em>(${note.cau_goc})</em>: <span style="color:#e11d48; font-weight:bold;">${note.mo_ta_hinh_anh_can_chen}</span>`;
-                    newList.appendChild(li);
-                });
                 alertBox.style.display = 'block';
             } else {
-                // Hiển thị khung màu xanh thông báo không cần hình
-                alertBox.style.display = 'block';
+                alertBox.innerHTML = `<h3 style="color: #059669; margin-top: 0; margin-bottom: 5px; font-size: 16px;"><i class="fa-solid fa-circle-check"></i> ĐỀ THI HOÀN HẢO</h3><p style="color: #047857; margin-bottom: 0; font-size: 14px;">Trí tuệ nhân tạo xác nhận đề thi này không có câu hỏi nào cần bổ sung sơ đồ hoặc hình ảnh.</p>`;
                 alertBox.style.borderColor = '#10b981';
                 alertBox.style.background = '#f0fdf4';
-                alertBox.innerHTML = `<h3 style="color: #059669; margin-top: 0; margin-bottom: 5px; font-size: 16px;"><i class="fa-solid fa-circle-check"></i> ĐỀ THI HOÀN HẢO</h3><p style="color: #047857; margin-bottom: 0; font-size: 14px;">Trí tuệ nhân tạo xác nhận đề thi này không có câu hỏi nào cần bổ sung sơ đồ hoặc hình ảnh.</p><ul id="teacher-image-notes-list" style="display:none;"></ul>`;
+                alertBox.style.display = 'block';
             }
         }
 
-        const mindmapText = drafts.mindmap || "";
-        const questionsList = drafts.exam || [];
+        const mindmapText = (drafts && drafts.mindmap) ? drafts.mindmap : "";
+        const questionsList = (drafts && drafts.exam) ? drafts.exam : [];
 
         let html = `
         <div class="q-card" style="border-left: 4px solid var(--success); background: #f0fdf4;">
@@ -1084,10 +1069,7 @@
         `;
 
         questionsList.forEach((q, i) => { 
-            // Áp dụng màng lọc chém sạch chữ rác cho Giám khảo dễ nhìn
-            let cleanQText = cleanQuestionText(q.questionText);
-
-            // HIỂN THỊ HÌNH ẢNH TRONG LÚC DUYỆT ĐỀ
+            let cleanQText = cleanQuestionText(q.questionText || "");
             let imgHtml = "";
             if (q.image) {
                 imgHtml = `<div style="margin-top:10px; position:relative; display:inline-block; border: 2px solid var(--primary); border-radius:8px; padding:4px; background:white;">
@@ -1099,10 +1081,9 @@
             html += `
                 <div class="q-card" id="qd-${i}">
                     <button onclick="removeQuestion(${i})" style="position:absolute; right:16px; top:16px; background:var(--bg-light); color:var(--text-muted); border:none; padding:4px 8px; border-radius:4px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
-                    <p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type}):</b></p>
+                    <p style="font-size:15px; margin-top:0;"><b>Câu ${i+1} (${q.type || 'Không xác định'}):</b></p>
                     <textarea class="edit-in" id="eq-${i}" rows="2" style="width:100%;">${cleanQText}</textarea>
                     
-                    <!-- NÚT UPLOAD ẢNH CHO GIÁO VIÊN -->
                     <div style="margin-top:10px; margin-bottom:15px;">
                         <input type="file" id="qimg-${i}" accept="image/*" style="display:none;" onchange="attachImage(${i}, this)">
                         <button class="btn-outline" style="padding:6px 12px; font-size:12px; background:#eef2ff;" onclick="$('qimg-${i}').click()"><i class="fa-solid fa-image"></i> Đính kèm ảnh cho câu này</button>
@@ -1111,35 +1092,28 @@
                     </div>
                 `; 
 
-            if(q.type==='nhiều lựa chọn') { 
+            if(q.type === 'nhiều lựa chọn') { 
                 html += `<div style="margin-top:12px;">`; 
-                q.options.forEach((o,j) => {
-                    let cleanOpt = cleanOptionText(o); 
+                (q.options || []).forEach((o,j) => {
+                    let cleanOpt = cleanOptionText(o || ""); 
                     html += `<div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;"><b>${String.fromCharCode(65+j)}.</b> <input class="edit-in" id="eo-${i}-${j}" value="${cleanOpt}" style="flex:1; padding:8px;"></div>`;
                 }); 
                 html += `<div style="margin-top:12px; display:inline-block; background:var(--bg-light); padding:8px 12px; border-radius:6px; border:1px solid var(--border);"><b>KEY ĐÁP ÁN:</b> <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||'A'}" style="width:50px; text-align:center; padding:4px;"></div>`;
                 html += `</div>`; 
-            } else if(q.type==='đúng sai') { 
+            } else if(q.type === 'đúng sai') { 
                 html += `<div style="margin-top:12px;">`; 
-                q.subOptions.forEach((s,j) => {
-                    let cleanSubOpt = cleanOptionText(s); 
-                    html += `<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${q.correctAnswers && q.correctAnswers[j]==='D'?'selected':''}>ĐÚNG</option><option value="S" ${q.correctAnswers && q.correctAnswers[j]==='S'?'selected':''}>SAI</option></select></div>`;
+                (q.subOptions || []).forEach((s,j) => {
+                    let cleanSubOpt = cleanOptionText(s || ""); 
+                    let correctAns = (q.correctAnswers && q.correctAnswers[j]) ? q.correctAnswers[j] : 'D';
+                    html += `<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${correctAns==='D'?'selected':''}>ĐÚNG</option><option value="S" ${correctAns==='S'?'selected':''}>SAI</option></select></div>`;
                 }); 
                 html += `</div>`; 
             } 
-            html += `</div>`; // ĐÓNG THẺ DIV CHÍNH CỦA QUESTION CARD (CHỖ NÀY LÀ MẤU CHỐT SỬA LỖI)
+            html += `</div>`; // CHỖ NÀY ĐÃ ĐƯỢC BỌC THÊM THẺ DIV ĐỂ TRÁNH LỖI SỌC VẰN DỒN CÂU HỎI
         }); 
         $('qDrafts').innerHTML = html; 
 
         setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
-    };
-
-    const removeQuestion = (index) => {
-        if(confirm("Xóa câu hỏi này?")) {
-            saveCurrentDraftValues();
-            drafts.exam.splice(index, 1);
-            renderDraft();
-        }
     };
 
     const saveCurrentDraftValues = () => {
@@ -1148,12 +1122,12 @@
         questionsList.forEach((q, i) => {
             if(!$(`qd-${i}`)) return;
             q.questionText = $(`eq-${i}`).value;
-            if(q.type==='nhiều lựa chọn') {
-                q.options = [$(`eo-${i}-0`).value,$(`eo-${i}-1`).value,$(`eo-${i}-2`).value,$(`eo-${i}-3`).value];
+            if(q.type === 'nhiều lựa chọn') {
+                q.options = [$(`eo-${i}-0`)?.value||"", $(`eo-${i}-1`)?.value||"", $(`eo-${i}-2`)?.value||"", $(`eo-${i}-3`)?.value||""];
                 q.correctAnswer = $(`ek-${i}`).value.trim().toUpperCase();
-            } else if(q.type==='đúng sai') {
-                q.subOptions = [$(`es-${i}-0`).value,$(`es-${i}-1`).value,$(`es-${i}-2`).value,$(`es-${i}-3`).value];
-                q.correctAnswers = [$(`ekd-${i}-0`).value,$(`ekd-${i}-1`).value,$(`ekd-${i}-2`).value,$(`ekd-${i}-3`).value];
+            } else if(q.type === 'đúng sai') {
+                q.subOptions = [$(`es-${i}-0`)?.value||"", $(`es-${i}-1`)?.value||"", $(`es-${i}-2`)?.value||"", $(`es-${i}-3`)?.value||""];
+                q.correctAnswers = [$(`ekd-${i}-0`)?.value||"D", $(`ekd-${i}-1`)?.value||"D", $(`ekd-${i}-2`)?.value||"D", $(`ekd-${i}-3`)?.value||"D"];
             }
         });
     };
@@ -1222,7 +1196,6 @@
             const picked = ansObj ? ansObj.picked : "Không làm";
             let color = ansObj && ansObj.p > 0 ? (ansObj.p === 1 ? "var(--success)" : "var(--warning)") : "var(--danger)";
 
-            // SHOW HÌNH ẢNH TRONG KHI XEM LẠI BÀI CỦA HỌC SINH
             let imgHtmlReview = q.image ? `<img src="${q.image}" style="max-width:100%; max-height:250px; border-radius:8px; margin-bottom:10px; display:block; border:1px solid var(--border);">` : '';
 
             h += `<div style="border-bottom: 1px solid var(--border); padding-bottom:15px; margin-bottom:15px;">
@@ -1510,10 +1483,8 @@
         shuffledQs.forEach((q, i) => {
             let encodedCorrect = q.correctAnswer; h+=`<div class="game-q-card" id="sc-${i}" data-type="${q.type}">`;
 
-            // Xóa rác khi hiển thị cho Học Sinh
             let cleanQTextHS = cleanQuestionText(q.questionText);
             
-            // HIỆN HÌNH ẢNH TRONG LÚC THI NẾU CÓ
             let imgHtmlHS = q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:8px; margin: 15px 0; border:1px solid #cbd5e1; display:block;">` : '';
 
             h+=`<h3 style="font-size:18px; margin-top:0; color:#1e293b; font-weight:800;">Câu ${i+1}: ${cleanQTextHS}</h3>
