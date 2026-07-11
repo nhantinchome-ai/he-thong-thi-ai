@@ -93,20 +93,59 @@ app.post('/api/tao-giao-vien', async (req, res) => {
 });
 
 // ==========================================
-// HÀM TẠO THẦN CHÚ LÁCH BẢN QUYỀN THEO TỪNG MÔN HỌC
+// TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN RIÊNG CHO 11 MÔN HỌC (SIÊU CHI TIẾT)
 // ==========================================
 function getSmartPrompt(subject, customPrompt) {
     let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
     const subj = (subject || "").toLowerCase();
 
-    if (subj.includes('toán') || subj.includes('lý') || subj.includes('vật lí') || subj.includes('hóa') || subj.includes('tin')) {
-        return base + `[CHỈ THỊ TỐI MẬT - KHỐI TỰ NHIÊN]: Bắt buộc viết lại (paraphrase) phần lời văn của câu hỏi bằng từ đồng nghĩa. TUYỆT ĐỐI GIỮ NGUYÊN 100% các con số, biến số, công thức, ký hiệu toán học/hóa học và đáp án đúng.`;
-    } else if (subj.includes('văn') || subj.includes('sử') || subj.includes('địa') || subj.includes('gdcd') || subj.includes('kinh tế')) {
-        return base + `[CHỈ THỊ TỐI MẬT - KHỐI XÃ HỘI]: Bắt buộc diễn đạt lại toàn bộ câu hỏi bằng cách đảo cấu trúc câu, thay thế ít nhất 30% từ vựng bằng từ đồng nghĩa để tránh bản quyền. TUYỆT ĐỐI GIỮ NGUYÊN các mốc thời gian, địa danh, tên nhân vật, sự kiện và đáp án đúng.`;
-    } else if (subj.includes('anh') || subj.includes('ngoại ngữ')) {
-        return base + `[CHỈ THỊ TỐI MẬT - KHỐI NGOẠI NGỮ]: Chỉ được phép viết lại (paraphrase) phần "yêu cầu bằng tiếng Việt" của đề bài. TUYỆT ĐỐI GIỮ NGUYÊN 100% đoạn văn đọc hiểu (Reading), câu hỏi ngữ pháp tiếng Anh và các từ vựng trong đáp án. Không được dịch tiếng Anh sang tiếng Việt.`;
-    } else {
-        return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa và đảo cấu trúc câu để không trùng lặp văn bản gốc. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`;
+    // 1. MÔN TOÁN
+    if (subj.includes('toán')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN TOÁN HỌC]: BẮT BUỘC viết lại (paraphrase) lời văn câu dẫn. Ví dụ: "Tìm x để..." -> "Hãy xác định giá trị của biến x sao cho...", "Tính đạo hàm..." -> "Đạo hàm của hàm số sau là...". TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức đại số, tọa độ, tích phân, ma trận, hình học và đáp án.`;
+    } 
+    // 2. MÔN VẬT LÍ
+    else if (subj.includes('lý') || subj.includes('vật lí')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN VẬT LÍ]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng, tình huống vật lí bằng từ đồng nghĩa và cấu trúc câu khác. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị đo lường (m/s, kg, N, J, V, A, Ω...), các thông số kỹ thuật, công thức vật lí và đáp án đúng.`;
+    } 
+    // 3. MÔN HÓA HỌC
+    else if (subj.includes('hóa')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN HÓA HỌC]: BẮT BUỘC viết lại câu hỏi lý thuyết và mô tả thí nghiệm bằng cấu trúc câu khác. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học (H2O, Fe2O3...), hệ số cân bằng phương trình, khối lượng mol, điều kiện phản ứng (nhiệt độ, xúc tác) và số liệu bài toán.`;
+    } 
+    // 4. MÔN SINH HỌC
+    else if (subj.includes('sinh')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN SINH HỌC]: BẮT BUỘC diễn đạt lại câu dẫn lý thuyết, quy luật di truyền hoặc mô tả sinh thái bằng từ đồng nghĩa. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba (codon), trình tự ADN/ARN, tỉ lệ kiểu hình (VD: 9:3:3:1), thuật ngữ sinh học chuyên ngành và tên khoa học của loài.`;
+    } 
+    // 5. MÔN TIN HỌC / CÔNG NGHỆ THÔNG TIN
+    else if (subj.includes('tin') || subj.includes('lập trình')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN TIN HỌC]: BẮT BUỘC viết lại phần lời hỏi và mô tả bài toán. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đoạn mã code (C++, Python, Pascal...), cú pháp câu lệnh, tên biến, thuật toán, bảng chân lý và kết quả đầu ra (Output).`;
+    } 
+    // 6. MÔN NGỮ VĂN
+    else if (subj.includes('văn')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN NGỮ VĂN]: BẮT BUỘC diễn đạt lại các câu hỏi đọc hiểu và nghị luận bằng cách thay thế ít nhất 35% từ vựng bằng từ đồng nghĩa, đảo vế câu. LƯU Ý CỰC KỲ QUAN TRỌNG: TUYỆT ĐỐI KHÔNG được thay đổi hay sửa câu chữ trong các ĐOẠN VĂN BẢN TRÍCH DẪN, ĐOẠN THƠ trong phần Đọc hiểu!`;
+    } 
+    // 7. MÔN LỊCH SỬ
+    else if (subj.includes('sử')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN LỊCH SỬ]: BẮT BUỘC viết lại câu hỏi đánh giá, phân tích sự kiện bằng cấu trúc câu hoàn toàn mới. TUYỆT ĐỐI GIỮ NGUYÊN 100% các ngày tháng năm, mốc thời gian, tên triều đại, tên nhân vật lịch sử, tên chiến dịch, hiệp ước và địa danh.`;
+    } 
+    // 8. MÔN ĐỊA LÍ
+    else if (subj.includes('địa')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN ĐỊA LÍ]: BẮT BUỘC diễn đạt lại các câu hỏi lý thuyết kinh tế - xã hội, địa hình bằng cách xào lại từ vựng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các số liệu thống kê, tỉ lệ phần trăm, tọa độ địa lí, tên quốc gia, sông ngòi, khoáng sản và bảng số liệu/biểu đồ.`;
+    } 
+    // 9. MÔN GDCD / KINH TẾ & PHÁP LUẬT
+    else if (subj.includes('gdcd') || subj.includes('pháp luật') || subj.includes('kinh tế')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN GDCD / PHÁP LUẬT]: Với các câu hỏi tình huống đời sống/pháp luật, ĐƯỢC PHÉP thay đổi tên các nhân vật (VD: từ Anh A thành Anh X, Chị B thành Chị Y) và diễn đạt lại tình huống để tránh lỗi bản quyền. TUYỆT ĐỐI GIỮ NGUYÊN các Điều, Khoản của Luật và bản chất vi phạm/đáp án.`;
+    } 
+    // 10. MÔN TIẾNG ANH / NGOẠI NGỮ
+    else if (subj.includes('anh') || subj.includes('ngoại ngữ') || subj.includes('english')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN TIẾNG ANH]: BẮT BUỘC CHỈ viết lại (paraphrase) phần lời dẫn yêu cầu bằng tiếng Việt (hoặc tiếng Anh) ở đầu câu hỏi. TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu (Reading passage), câu hỏi ngữ pháp, chỗ trống cần điền và 4 đáp án A, B, C, D. Không được dịch tiếng Anh sang tiếng Việt.`;
+    } 
+    // 11. MÔN CÔNG NGHỆ
+    else if (subj.includes('công nghệ')) {
+        return base + `[CHỈ THỊ TỐI MẬT - MÔN CÔNG NGHỆ]: BẮT BUỘC diễn đạt lại lời văn câu hỏi lý thuyết và quy trình kỹ thuật. TUYỆT ĐỐI GIỮ NGUYÊN 100% các thông số kỹ thuật, kích thước bản vẽ, chi tiết cơ khí/mạch điện và các bước quy trình chuẩn.`;
+    } 
+    // MẶC ĐỊNH CHO CÁC MÔN KHÁC
+    else {
+        return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa và đảo cấu trúc câu để không trùng lặp văn bản gốc. Giữ nguyên 100% dữ liệu cốt lõi, số liệu và đáp án.`;
     }
 }
 
@@ -120,7 +159,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
         if (apiKeys.length === 0) return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
 
-        // DANH SÁCH MODEL (Ưu tiên vắt kiệt con 3.5 trước rồi mới tụt xuống)
+        // DANH SÁCH MODEL (Vắt kiệt con 3.5 trước trên tất cả các Key rồi mới hạ đời)
         const modelsToTry = [
             "gemini-3.5-flash",       // Quái vật số 1: Thông minh, nhanh, đọc đủ câu
             "gemini-1.5-pro",         // Dự phòng 1: Trâu bò, đọc siêu chuẩn (nếu key hỗ trợ)
@@ -157,7 +196,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 const fileManager = new GoogleAIFileManager(currentKey);
                 
                 let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
-                console.log(`🔄 Đang thử: [Model ${currentModelName}] + [API Key ${i+1}/${apiKeys.length}] - ${modeText}...`);
+                console.log(`🔄 Đang thử: [Model ${currentModelName}] + [API Key ${i+1}/${apiKeys.length}] - Môn [${teachingSubject}] - ${modeText}...`);
 
                 // 1. CHIA ĐƯỜNG CÂU LỆNH DỰA VÀO CỜ BẢN QUYỀN
                 let currentInstruction = "";
