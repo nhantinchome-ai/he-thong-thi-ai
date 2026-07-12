@@ -391,11 +391,9 @@
 
     const PREDEFINED_CLASSES = ['10A', '10B', '10C', '10D', '10E', '10F', '10G', '11A', '11B', '11C', '11D', '11E', '11F', '11G', '12A', '12B', '12C', '12D', '12E', '12F', '12G', '12H', '12I', '12K'];
     
-    // Đã gỡ bỏ LocalStorage, dùng biến tạm chờ Sync từ MongoDB
     let examsDB = [];
     let scoresDB = []; 
 
-    // HÀM MỚI: Đồng bộ dữ liệu 2 chiều từ MongoDB
     const syncDB = async () => {
         try {
             const exRes = await fetch(`${API}/api/exams`);
@@ -646,13 +644,6 @@
                 canvas.width = width; canvas.height = height;
                 ctx.fillStyle = "white"; ctx.fillRect(0, 0, width, height);
 
-                let y = 0;
-                images.forEach(img => {
-                    const x = (width - img.width) / 2; 
-                    ctx.drawImage(img, x, y);
-                    y += img.height;
-                });
-
                 const combinedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 currentFileBase64 = combinedDataUrl.split(',')[1];
                 currentMimeType = "image/jpeg";
@@ -689,7 +680,6 @@
                 toast("Đăng nhập thành công! Đang tải dữ liệu...", "loading"); 
                 session = data.data; 
                 
-                // Đồng bộ 100% dữ liệu từ máy chủ trước khi hiện giao diện
                 await syncDB();
 
                 $('authSection').style.display = 'none'; 
@@ -1123,9 +1113,18 @@ LƯU Ý CẤU TRÚC:
         if (alertBox) {
             if (drafts && drafts.teacher_image_notes && drafts.teacher_image_notes.length > 0) {
                 let noteHtml = `<h3 style="color: #e11d48; margin-top: 0; margin-bottom: 10px; font-size: 16px;"><i class="fa-solid fa-triangle-exclamation"></i> BÁO CÁO CẦN GẮN HÌNH ẢNH (CHỈ GV THẤY)</h3><p style="color: #9f1239; margin-bottom: 10px; font-size: 14px;">AI phát hiện các câu sau bị thiếu hình/sơ đồ từ đề gốc. Sếp vui lòng cắt và đính kèm lại vào đúng câu nhé:</p><ul style="padding-left: 20px; color: #be123c; font-size: 14px; margin: 0;">`;
+                
                 drafts.teacher_image_notes.forEach(note => {
-                    noteHtml += `<li style="margin-bottom:8px;"><strong>${note.cau_hien_tai}</strong> <em>(${note.cau_goc})</em>: <span style="color:#e11d48; font-weight:bold;">${note.mo_ta_hinh_anh_can_chen}</span></li>`;
+                    if (typeof note === 'string') {
+                        noteHtml += `<li style="margin-bottom:8px;"><i class="fa-solid fa-caret-right"></i> <span style="color:#e11d48; font-weight:600;">${note}</span></li>`;
+                    } else {
+                        let cau = note.cau_hien_tai || note.cau || note.cau_hoi || "Lưu ý";
+                        let goc = note.cau_goc ? `(Gốc: ${note.cau_goc})` : "";
+                        let mota = note.mo_ta_hinh_anh_can_chen || note.mo_ta || note.ghi_chu || note.loi_nhan || "";
+                        noteHtml += `<li style="margin-bottom:8px;"><strong>${cau}</strong> <em>${goc}</em>: <span style="color:#e11d48; font-weight:600;">${mota}</span></li>`;
+                    }
                 });
+                
                 noteHtml += `</ul>`;
                 alertBox.innerHTML = noteHtml;
                 alertBox.style.borderColor = '#f43f5e';
