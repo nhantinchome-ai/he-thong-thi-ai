@@ -128,7 +128,7 @@ app.post('/api/scores/delete', async (req, res) => {
 });
 
 // ==========================================
-// TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN (11 MÔN)
+// TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN (GIỮ NGUYÊN GỐC CỦA SẾP)
 // ==========================================
 function getSmartPrompt(subject, customPrompt) {
     let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
@@ -149,7 +149,7 @@ function getSmartPrompt(subject, customPrompt) {
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - CHỐNG TỪ CHỐI NGẦM
+// 4. BỘ NÃO AI OCR - CHỐNG TỪ CHỐI NGẦM & PHỤC HỒI INLINE_DATA
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     let tempFilePath = null;
@@ -158,19 +158,19 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
         if (apiKeys.length === 0) return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
 
-        const modelsToTry = ["gemini-3.5-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-3.1-flash-lite"];
+        const modelsToTry = [
+            "gemini-3.5-flash",       
+            "gemini-1.5-pro",         
+            "gemini-1.5-flash",       
+            "gemini-3.1-flash-lite"   
+        ];
 
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
         const documentText = req.body.documentText;
         const customPrompt = req.body.customPrompt; 
         
-        if (req.body.fileBase64) {
-            let ext = '.png';
-            if (req.body.fileMimeType === 'application/pdf') ext = '.pdf';
-            else if (req.body.fileMimeType === 'image/jpeg') ext = '.jpg';
-            tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}${ext}`);
-            fs.writeFileSync(tempFilePath, Buffer.from(req.body.fileBase64, 'base64'));
-        } else if (req.file) {
+        // CHỈ LƯU FILE TẠM NẾU LÀ GỬI BẰNG FORM-DATA
+        if (req.file) {
             tempFilePath = path.join(os.tmpdir(), `upload_${Date.now()}_${req.file.originalname}`);
             fs.writeFileSync(tempFilePath, req.file.buffer);
         }
@@ -193,23 +193,22 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 const fileManager = new GoogleAIFileManager(currentKey);
                 
                 let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI (THẦN CHÚ 11 MÔN)" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
-                console.log(`🔄 Đang thử: [Model ${currentModelName}] + [Key ${i+1}] - ${modeText}...`);
+                console.log(`🔄 Đang thử: [Model ${currentModelName}] + [Key ${i+1}/${apiKeys.length}] - Môn [${teachingSubject}] - ${modeText}...`);
 
                 let currentInstruction = "";
                 if (!isRecitationMode) {
-                    currentInstruction = `\n2. NHIỆM VỤ OCR: BẮT BUỘC trích xuất chính xác 100% văn bản gốc. Tuyệt đối không được thêm bớt chữ.\n`;
+                    currentInstruction = `\n2. NHIỆM VỤ OCR CHUẨN: BẮT BUỘC trích xuất chính xác 100% văn bản gốc. Tuyệt đối không được thêm bớt chữ.\n`;
                     if (customPrompt) currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
                 } else {
                     currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`;
                 }
 
+                // KHÔNG GIỚI HẠN SỐ CÂU - CÓ BAO NHIÊU QUÉT BẤY NHIÊU NHƯ BẢN GỐC CỦA SẾP
                 const prompt = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Hãy đọc tài liệu đính kèm và thực hiện:
                 1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt.
                 ${currentInstruction}
-                3. QUY TẮC BẢO TOÀN SỐ LƯỢNG: Trích xuất TOÀN BỘ 100% CÁC CÂU HỎI có trong tài liệu (Bao nhiêu câu lấy bấy nhiêu). TUYỆT ĐỐI KHÔNG ĐƯỢC CẮT XÉN!
-                   - Câu Trắc nghiệm 4 đáp án -> loại "nhiều lựa chọn".
-                   - Câu Đúng/Sai -> loại "đúng sai", BẮT BUỘC tách 4 ý nhỏ a,b,c,d vào "subOptions", đáp án D/S vào "correctAnswers".
-                4. CẢNH BÁO QUÉT HÌNH ẢNH: Nếu CÓ BẤT KỲ CÂU NÀO CHỨA HÌNH ẢNH/ĐỒ THỊ, bạn BẮT BUỘC ghi chú rõ vào mảng "teacher_image_notes".
+                3. TUYỆT ĐỐI KHÔNG ĐƯỢC LƯỜI BIẾNG: Đề gốc có bao nhiêu câu (dù là 30 hay 40 câu) BẮT BUỘC phải trích xuất ĐẦY ĐỦ 100%. Không được tự ý tóm tắt, không được cắt xén bỏ sót câu nào!
+                4. KHUNG QUẢN LÝ HÌNH ẢNH DÀNH CHO GIÁO VIÊN: Đối chiếu câu bạn vừa trích xuất với câu trong đề gốc. Nếu câu đó ở đề gốc CÓ HÌNH ẢNH, BẢNG BIỂU, ĐỒ THỊ hãy ghi chú lại vào mảng "teacher_image_notes" để nhắc giáo viên đính kèm hình. Nếu không có hình thì mảng này để trống.
                 
                 BẮT BUỘC TRẢ VỀ JSON CHUẨN:
                 {
@@ -233,13 +232,15 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     const model = genAI.getGenerativeModel({ model: currentModelName, generationConfig: { responseMimeType: "application/json" } });
                     let responseText = "";
 
+                    // ĐÃ KHÔI PHỤC LẠI CƠ CHẾ ĐỌC ẢNH SIÊU TỐC CỦA SẾP!
                     if (tempFilePath) {
-                        let mimeTypeToUse = req.file ? req.file.mimetype : req.body.fileMimeType;
-                        let nameToUse = req.file ? req.file.originalname : `upload_${Date.now()}`;
-
-                        const uploadResult = await fileManager.uploadFile(tempFilePath, { mimeType: mimeTypeToUse, displayName: nameToUse });
+                        const uploadResult = await fileManager.uploadFile(tempFilePath, { mimeType: req.file.mimetype, displayName: req.file.originalname });
                         const result = await model.generateContent([ prompt, { fileData: { fileUri: uploadResult.file.uri, mimeType: uploadResult.file.mimeType } } ]);
                         await fileManager.deleteFile(uploadResult.file.name);
+                        responseText = result.response.text();
+                    } else if (req.body.fileBase64) {
+                        // SỬ DỤNG TRỰC TIẾP INLINE DATA - AI HẾT BỊ MÙ!
+                        const result = await model.generateContent([ prompt, { inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } } ]);
                         responseText = result.response.text();
                     } else {
                         const result = await model.generateContent(prompt);
@@ -249,22 +250,22 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
                     finalResult = JSON.parse(responseText);
 
-                    // 🚨 MÁY QUÉT NÓI DỐI: NẾU AI TỪ CHỐI NGẦM TRẢ VỀ 0 CÂU -> BẮT LỖI NGAY!
-                    if (!finalResult.exam || finalResult.exam.length === 0) {
-                        throw new Error("SILENT_BLOCK: AI trả về 0 câu hỏi (Bị chặn bản quyền ngầm).");
+                    // MÁY QUÉT NÓI DỐI - XỬ LÝ LƯƠN LẸO TRẢ VỀ 0 CÂU HOẶC CHỈ TRẢ VỀ CÁI DÍNH TRONG VÍ DỤ
+                    if (!finalResult.exam || finalResult.exam.length <= 1) {
+                        throw new Error("SILENT_BLOCK");
                     }
 
                     isSuccess = true;
                     console.log(`✅ THÀNH CÔNG RỰC RỠ! Đã quét xong ${finalResult.exam.length} câu!`);
 
                 } catch (error) {
-                    console.error(`❌ Thất bại:`, error.message);
+                    console.error(`❌ Thất bại với [Model ${currentModelName}] + [Key ${i+1}]:`, error.message);
                     
                     // CHUẨN Ý SẾP: KHI BỊ CHẶN BẢN QUYỀN -> PHANH 3 GIÂY -> BƠM LỆNH TÙY CHỌN 11 MÔN (XÀO BÀI)
                     if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
                         if (!isRecitationMode) {
                             console.log(`⚠️ Phát hiện dính bản quyền (Nguyên bản lỗi)! Phanh 3s rồi QUAY XE xào bài...`);
-                            await sleep(3000); // PHANH 3 GIÂY ĐÚNG Ý SẾP
+                            await sleep(3000); // PHANH 3 GIÂY
                             isRecitationMode = true; // Bật khiên thần chú 11 môn
                             i--; // Lùi lại 1 bước để thử lại bằng Key này
                             continue; 
