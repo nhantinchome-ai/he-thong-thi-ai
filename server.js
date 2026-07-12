@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Cấu hình Multer nhận file
+// Cấu hình Multer nhận file dung lượng lớn
 const upload = multer({ 
     storage: multer.memoryStorage(), 
     limits: { fileSize: 50 * 1024 * 1024 } 
@@ -70,26 +70,131 @@ const ScoreSchema = new mongoose.Schema({
 const Score = mongoose.model('Score', ScoreSchema);
 
 // ==========================================
-// 2. CÁC API QUẢN LÝ
+// 2. CÁC API QUẢN LÝ HỆ THỐNG
 // ==========================================
-app.get('/', (req, res) => { res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); });
-app.post('/api/dang-ky', async (req, res) => { try { await new User({ ...req.body, role: 'student', createdAt: Date.now() }).save(); res.status(201).json({ message: "Đăng ký thành công" }); } catch (error) { res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" }); } });
+app.get('/', (req, res) => { 
+    res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); 
+});
+
+app.post('/api/dang-ky', async (req, res) => { 
+    try { 
+        const newUser = new User({ ...req.body, role: 'student', createdAt: Date.now() });
+        await newUser.save();
+        res.status(201).json({ message: "Đăng ký thành công" }); 
+    } catch (error) { 
+        res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" }); 
+    } 
+});
+
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
-        if (username === 'admin' && password === 'admin') { let adminUser = await User.findOne({ username: 'admin' }); if (!adminUser) { adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() }); await adminUser.save(); } return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser }); }
-        const user = await User.findOne({ username, password }); if (user) { res.status(200).json({ message: "Thành công", data: user }); } else { res.status(401).json({ message: "Sai tài khoản mật khẩu!" }); }
-    } catch (error) { res.status(500).json({ message: "Lỗi máy chủ" }); }
+        
+        // Quản trị viên
+        if (username === 'admin' && password === 'admin') { 
+            let adminUser = await User.findOne({ username: 'admin' }); 
+            if (!adminUser) { 
+                adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() }); 
+                await adminUser.save(); 
+            } 
+            return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser }); 
+        }
+        
+        // Người dùng bình thường
+        const user = await User.findOne({ username, password }); 
+        if (user) {
+            res.status(200).json({ message: "Thành công", data: user }); 
+        } else {
+            res.status(401).json({ message: "Sai tài khoản mật khẩu!" });
+        }
+    } catch (error) { 
+        res.status(500).json({ message: "Lỗi máy chủ" }); 
+    }
 });
-app.get('/api/admin/tat-ca-users', async (req, res) => { try { const users = await User.find({}); res.status(200).json({ data: users }); } catch (error) { res.status(500).json({ message: "Lỗi truy xuất" }); } });
-app.post('/api/admin/xoa-user', async (req, res) => { try { await User.findByIdAndDelete(req.body.userId); res.status(200).json({ message: "Xóa thành công" }); } catch (error) { res.status(500).json({ message: "Lỗi xóa" }); } });
-app.post('/api/tao-giao-vien', async (req, res) => { try { const newTeacher = new User({ ...req.body, role: 'teacher', createdAt: Date.now() }); await newTeacher.save(); res.status(201).json({ message: "Thành công" }); } catch (error) { res.status(400).json({ message: "Trùng Tên đăng nhập!" }); } });
-app.post('/api/exams', async (req, res) => { try { const newExam = new Exam(req.body); await newExam.save(); res.json({ success: true, message: 'Lưu đề thành công!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
-app.get('/api/exams', async (req, res) => { try { const exams = await Exam.find(); res.json({ success: true, data: exams }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
-app.post('/api/exams/delete', async (req, res) => { try { await Exam.deleteOne({ id: req.body.id }); res.json({ success: true, message: 'Đã xóa đề!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
-app.post('/api/scores', async (req, res) => { try { const newScore = new Score(req.body); await newScore.save(); res.json({ success: true, message: 'Lưu điểm thành công!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
-app.get('/api/scores', async (req, res) => { try { const scores = await Score.find(); res.json({ success: true, data: scores }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
-app.post('/api/scores/delete', async (req, res) => { try { await Score.findByIdAndDelete(req.body._id); res.json({ success: true, message: 'Đã xóa điểm!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
+
+app.get('/api/admin/tat-ca-users', async (req, res) => { 
+    try { 
+        const users = await User.find({});
+        res.status(200).json({ data: users }); 
+    } catch (error) { 
+        res.status(500).json({ message: "Lỗi truy xuất" }); 
+    } 
+});
+
+app.post('/api/admin/xoa-user', async (req, res) => { 
+    try { 
+        await User.findByIdAndDelete(req.body.userId); 
+        res.status(200).json({ message: "Xóa thành công" }); 
+    } catch (error) { 
+        res.status(500).json({ message: "Lỗi xóa" }); 
+    } 
+});
+
+app.post('/api/tao-giao-vien', async (req, res) => { 
+    try { 
+        const newTeacher = new User({ ...req.body, role: 'teacher', createdAt: Date.now() });
+        await newTeacher.save();
+        res.status(201).json({ message: "Thành công" }); 
+    } catch (error) { 
+        res.status(400).json({ message: "Trùng Tên đăng nhập!" }); 
+    } 
+});
+
+app.post('/api/exams', async (req, res) => { 
+    try { 
+        const newExam = new Exam(req.body);
+        await newExam.save();
+        res.json({ success: true, message: 'Lưu đề thành công!' }); 
+    } catch (err) { 
+        res.status(500).json({ success: false, message: err.message }); 
+    } 
+});
+
+app.get('/api/exams', async (req, res) => { 
+    try { 
+        const exams = await Exam.find();
+        res.json({ success: true, data: exams }); 
+    } catch (err) { 
+        res.status(500).json({ success: false, message: err.message }); 
+    } 
+});
+
+app.post('/api/exams/delete', async (req, res) => { 
+    try { 
+        await Exam.deleteOne({ id: req.body.id }); 
+        res.json({ success: true, message: 'Đã xóa đề!' }); 
+    } catch (err) { 
+        res.status(500).json({ success: false, message: err.message }); 
+    } 
+});
+
+app.post('/api/scores', async (req, res) => { 
+    try { 
+        const newScore = new Score(req.body);
+        await newScore.save();
+        res.json({ success: true, message: 'Lưu điểm thành công!' }); 
+    } catch (err) { 
+        res.status(500).json({ success: false, message: err.message }); 
+    } 
+});
+
+app.get('/api/scores', async (req, res) => { 
+    try { 
+        const scores = await Score.find();
+        res.json({ success: true, data: scores }); 
+    } catch (err) { 
+        res.status(500).json({ success: false, message: err.message }); 
+    } 
+});
+
+app.post('/api/scores/delete', async (req, res) => { 
+    try { 
+        await Score.findByIdAndDelete(req.body._id); 
+        res.json({ success: true, message: 'Đã xóa điểm!' }); 
+    } catch (err) { 
+        res.status(500).json({ success: false, message: err.message }); 
+    } 
+});
 
 // ==========================================
 // 3. TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN
@@ -98,16 +203,23 @@ function getSmartPrompt(subject, customPrompt) {
     let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
     const subj = (subject || "").toLowerCase();
     
-    if (subj.includes('toán')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`; } 
-    else if (subj.includes('lý') || subj.includes('vật lí') || subj.includes('công nghệ')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số, công thức và đáp án đúng.`; } 
-    else if (subj.includes('hóa')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`; } 
-    else if (subj.includes('sinh')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba, trình tự ADN, tỉ lệ kiểu hình.`; } 
-    else if (subj.includes('anh') || subj.includes('english')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC CHỈ viết lại lời dẫn bằng tiếng Việt (hoặc tiếng Anh). TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu, 4 đáp án A, B, C, D.`; } 
-    else { return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`; }
+    if (subj.includes('toán')) {
+        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`;
+    } else if (subj.includes('lý') || subj.includes('vật lí') || subj.includes('công nghệ')) {
+        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số, công thức và đáp án đúng.`;
+    } else if (subj.includes('hóa')) {
+        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`;
+    } else if (subj.includes('sinh')) {
+        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba, trình tự ADN, tỉ lệ kiểu hình.`;
+    } else if (subj.includes('anh') || subj.includes('english')) {
+        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC CHỈ viết lại lời dẫn bằng tiếng Việt (hoặc tiếng Anh). TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu, 4 đáp án A, B, C, D.`;
+    } else {
+        return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`;
+    }
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - ĐỘI HÌNH SIÊU XỊN ĐÃ LỌC BỎ LỖI
+// 4. BỘ NÃO AI OCR - FULL 4 TÍNH NĂNG CHI TIẾT
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -118,11 +230,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
         }
 
-        // ĐỘI HÌNH AI CHUẨN XỊN (Đã kiểm tra cú pháp chuẩn 100%)
+        // Đội hình AI ưu tiên chiến mã 3.5-flash
         const modelsToTry = [
-            "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã tốc độ, thông minh nhất
-            "gemini-1.5-flash",       // 🥈 TOP 2: Lốp dự phòng siêu bền đời 1.5
-            "gemini-3.1-flash-lite"   // 🥉 TOP 3: Chốt chặn cuối cùng
+            "gemini-3.5-flash",       
+            "gemini-1.5-flash",       
+            "gemini-3.1-flash-lite"   
         ];
         
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
@@ -130,13 +242,18 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const customPrompt = req.body.customPrompt; 
         const requestMode = req.body.mode || 'generate';
         
+        // Chuẩn bị mảng chứa hình ảnh đính kèm
         let imageParts = [];
         if (req.body.fileBase64Array && req.body.fileBase64Array.length > 0) {
             req.body.fileBase64Array.forEach(img => { 
-                imageParts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } }); 
+                imageParts.push({ 
+                    inlineData: { data: img.base64, mimeType: img.mimeType } 
+                }); 
             });
         } else if (req.body.fileBase64) {
-            imageParts.push({ inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } });
+            imageParts.push({ 
+                inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } 
+            });
         }
 
         let isSuccess = false;
@@ -145,71 +262,91 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+        // Vòng lặp xoay tua Model
         for (let j = 0; j < modelsToTry.length; j++) {
             if (isSuccess) break;
             const currentModelName = modelsToTry[j];
 
+            // Vòng lặp xoay tua API Key
             for (let i = 0; i < apiKeys.length; i++) {
                 if (isSuccess) break;
                 
                 const currentKey = apiKeys[i];
                 const genAI = new GoogleGenerativeAI(currentKey);
                 
-                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI NHẸ" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
+                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
                 console.log(`🔄 [${currentModelName}] + [Key ${i+1}] - [Mode: ${requestMode}] - ${modeText}`);
 
                 let currentInstruction = "";
                 if (requestMode === 'scan') {
                     if (!isRecitationMode) {
-                        currentInstruction = `\n2. LỆNH QUÉT ĐỀ: Trích xuất 100% văn bản gốc. Nếu vướng bản quyền, bạn được phép paraphrase tối đa 5% từ vựng trong lời dẫn, TUYỆT ĐỐI GIỮ NGUYÊN số liệu, hình ảnh và 4 đáp án.\n`;
+                        currentInstruction = `\n2. LỆNH QUÉT ĐỀ: Trích xuất chính xác 100% nội dung văn bản gốc. Nếu hệ thống báo bản quyền, được phép diễn đạt lại tối đa 5% lời dẫn câu hỏi nhưng phải giữ nguyên toàn bộ số liệu, công thức và 4 đáp án.\n`;
                     } else {
-                        currentInstruction = `\n2. LỆNH CHỐNG RECITATION SIÊU NHẸ: Để lách bản quyền mà không bị đuối sức, bạn TUYỆT ĐỐI KHÔNG paraphrase toàn bộ câu. CHỈ CẦN thêm cụm từ "Theo bài ra," hoặc đổi 1-2 từ ngữ ở ngay đầu mỗi câu hỏi. Giữ nguyên 95% văn bản gốc, số liệu và đáp án để tiết kiệm thời gian sinh JSON!\n`;
+                        currentInstruction = `\n2. LỆNH CHỐNG RECITATION: Tài liệu có bản quyền. Hãy diễn đạt lại cấu trúc câu trong lời dẫn câu hỏi để tránh vi phạm, nhưng BẮT BUỘC giữ nguyên 100% ý nghĩa, số liệu, công thức, bảng biểu và 4 đáp án.\n`;
                     }
-                    if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
+                    if (customPrompt) {
+                        currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
+                    }
                 } else {
                     if (!isRecitationMode) { 
                         currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC: Hãy sáng tác đề dựa vào tài liệu.\n`; 
-                        if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
+                        if (customPrompt) {
+                            currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; 
+                        }
                     } else { 
                         currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`; 
                     }
                 }
 
-                let promptText = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Đọc tài liệu đính kèm và thực hiện:
-                1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt.
+                // LỆNH CHUẨN: YÊU CẦU LÀM ĐỦ 4 NHIỆM VỤ CHI TIẾT KHÔNG CẮT XÉN
+                let promptText = `Bạn là chuyên gia thẩm định và trích xuất dữ liệu giáo dục. Hãy đọc toàn bộ tài liệu/ảnh đính kèm và thực hiện ĐẦY ĐỦ 4 NHIỆM VỤ sau:
+                1. Vẽ Sơ đồ tư duy (Mindmap): Tóm tắt chi tiết, logic toàn bộ cấu trúc và kiến thức trọng tâm của tài liệu đính kèm bằng định dạng Markdown.
                 ${currentInstruction}
-                3. QUY TẮC BẢO TOÀN (CHỐNG LƯỜI): Tài liệu có bao nhiêu câu, hãy trích xuất ĐẦY ĐỦ 100%. KHÔNG ĐƯỢC BỎ SÓT!
-                   - Trắc nghiệm 4 đáp án -> loại "nhiều lựa chọn".
-                   - Đúng/Sai -> loại "đúng sai", BẮT BUỘC tách 4 ý nhỏ a,b,c,d vào "subOptions", đáp án D/S vào "correctAnswers".
-                4. TÌM HÌNH ẢNH: Đối chiếu câu vừa viết với đề gốc. BẤT CỨ CÂU NÀO CÓ HÌNH ẢNH, SƠ ĐỒ, BẢNG BIỂU, hãy ghi chú chi tiết vào "teacher_image_notes".
+                3. Trích xuất ĐẦY ĐỦ 100% câu hỏi (QUY TẮC BẢO TOÀN): Tài liệu có bao nhiêu câu hỏi, phải bóc tách đầy đủ bấy nhiêu câu, tuyệt đối không được bỏ sót hay tóm tắt.
+                   - Câu hỏi trắc nghiệm 4 lựa chọn -> phân loại type là "nhiều lựa chọn".
+                   - Câu hỏi trắc nghiệm Đúng/Sai -> phân loại type là "đúng sai", BẮT BUỘC phải bóc tách rành mạch 4 ý nhỏ a, b, c, d vào mảng "subOptions" và đáp án Đúng/Sai của từng ý vào mảng "correctAnswers".
+                4. Soi hình ảnh và sơ đồ (Mắt thần): Kiểm tra từng câu hỏi vừa trích xuất với tài liệu gốc. Bất cứ câu nào có hình vẽ, sơ đồ mạch điện, bảng biểu hoặc đồ thị, BẮT BUỘC phải viết ghi chú chi tiết vào mảng "teacher_image_notes" để giáo viên biết đường bổ sung.
                 
-                BẮT BUỘC TRẢ VỀ JSON SAU:
+                BẮT BUỘC TRẢ VỀ DUY NHẤT CẤU TRÚC JSON CHUẨN SAU ĐÂY (Không viết thêm văn bản giải thích bên ngoài):
                 {
-                    "mindmap": "Nội dung...",
-                    "teacher_image_notes": [ { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Sơ đồ mạch điện" } ],
+                    "mindmap": "# Tiêu đề chính\n## Nhánh 1\n- Ý chi tiết 1\n## Nhánh 2\n- Ý chi tiết 2",
+                    "teacher_image_notes": [ 
+                        { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Sơ đồ mạch điện gồm điện trở R1 nối tiếp R2" } 
+                    ],
                     "exam": [
-                        { "type": "nhiều lựa chọn", "questionText": "Câu 1: Hỏi gì?", "options": ["A", "B", "C", "D"], "correctAnswer": "A" }
+                        { "type": "nhiều lựa chọn", "questionText": "Câu 1: Nội dung câu hỏi trắc nghiệm?", "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"], "correctAnswer": "A" },
+                        { "type": "đúng sai", "questionText": "Câu 2: Nội dung câu dẫn Đúng/Sai?", "subOptions": ["Nội dung ý a", "Nội dung ý b", "Nội dung ý c", "Nội dung ý d"], "correctAnswers": ["D", "S", "D", "S"] }
                     ]
                 }
                 Nội dung Text đính kèm: ${documentText || 'Dùng ảnh đính kèm.'}`;
 
                 let promptArray = [promptText];
-                if (imageParts.length > 0) { promptArray = promptArray.concat(imageParts); }
+                if (imageParts.length > 0) {
+                    promptArray = promptArray.concat(imageParts);
+                }
 
                 try {
+                    // Khởi tạo Model với temperature: 0.1 để AI tập trung bóc tách OCR tối đa, không lảm nhảm
                     const model = genAI.getGenerativeModel({ 
                         model: currentModelName, 
-                        generationConfig: { maxOutputTokens: 8192 } 
+                        generationConfig: { 
+                            maxOutputTokens: 8192,
+                            temperature: 0.1 
+                        } 
                     });
                     
                     const result = await model.generateContent(promptArray);
+                    
                     let rawText = result.response.text();
                     rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
+                    // Tìm và cắt chuẩn vùng JSON
                     let startIndex = rawText.indexOf('{');
                     let endIndex = rawText.lastIndexOf('}');
                     
-                    if (startIndex === -1 || endIndex === -1) { throw new Error("JSON_NOT_FOUND"); }
+                    if (startIndex === -1 || endIndex === -1) {
+                        throw new Error("JSON_NOT_FOUND: AI không sinh ra cấu trúc JSON.");
+                    }
                     
                     let cleanJsonString = rawText.substring(startIndex, endIndex + 1);
 
@@ -219,17 +356,19 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                         throw new Error("JSON_PARSE_ERROR");
                     }
 
-                    if (!finalResult.exam || finalResult.exam.length <= 1) { throw new Error("SILENT_BLOCK"); }
+                    if (!finalResult.exam || finalResult.exam.length <= 1) {
+                        throw new Error("SILENT_BLOCK");
+                    }
 
                     isSuccess = true;
-                    console.log(`✅ THÀNH CÔNG VỚI [${currentModelName}]! Đã quét xong ${finalResult.exam.length} câu!`);
+                    console.log(`✅ THÀNH CÔNG VỚI [${currentModelName}]! Đã bóc tách đủ ${finalResult.exam.length} câu!`);
 
                 } catch (error) {
                     console.error(`❌ [Key ${i+1}] BÁO LỖI:`, error.message);
                     
                     if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
                         if (!isRecitationMode) { 
-                            console.log(`⚠️ Bị chặn bản quyền! Đang bật khiên "Xào Bài Nhẹ" để lách luật...`);
+                            console.log(`⚠️ Bị chặn bản quyền! Đang chuyển sang chế độ Xào Bài để tiếp tục...`);
                             await sleep(3000); 
                             isRecitationMode = true; 
                             i--; 
@@ -247,7 +386,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         if (isSuccess) {
             return res.status(200).json({ data: finalResult });
         } else {
-            return res.status(503).json({ message: "Bị giới hạn tài nguyên. Sếp chia nhỏ file quét 2 trang/lần giúp em nhé!" });
+            return res.status(503).json({ message: "Hệ thống đang quá tải tài nguyên xử lý. Sếp vui lòng thử lại sau giây lát!" });
         }
 
     } catch (error) {
