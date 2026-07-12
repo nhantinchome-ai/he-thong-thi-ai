@@ -120,10 +120,12 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
         // 🌟 ĐỘI HÌNH TỨ TRỤ THEO Ý SẾP (THÍCH SỐ 4) 🌟
         const modelsToTry = [
-            "gemini-3.1-pro-preview", // 👑 TOP 1: Vua cày cuốc, tư duy sâu, chuyên trị đề 5 trang nặng
-            "gemini-3.5-flash",       // 🥈 TOP 2: Nhanh như điện, gánh tạ nếu Vua kẹt mạng
-            "gemini-pro",             // 🥉 TOP 3: Model Gốc Bất Tử (Google luôn trỏ về bản Pro ngon nhất)
-            "gemini-3.1-flash-lite"   // 🐢 TOP 4: Yếu xìu, đẩy xuống bét mâm làm chốt chặn cuối
+            // ĐỘI HÌNH AI CHUẨN XỊN (Đã lọc sạch các con bị 404 và cấm cửa)
+        const modelsToTry = [
+            "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã tốc độ, thông minh nhất
+            "gemini-1.5-flash",       // 🥈 TOP 2: Lốp dự phòng siêu bền đời 1.5
+            "gemini-3.1-flash-lite"   // 🥉 TOP 3: Chốt chặn cuối cùng
+        ];
         ];
         
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
