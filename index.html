@@ -166,7 +166,7 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 3.0 (TỰ CHỮA LỖI AI)</h1>
+    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 4.0 (REAL DATABASE)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
 
@@ -222,7 +222,7 @@
                     <div class="form-group"><label>Chủ nhiệm:</label><select id="aHr"><option value="">-- Không --</option></select></div>
                     <div class="form-group"><label>Lớp dạy:</label><div id="aGrid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:120px; overflow-y:auto; background:white; padding:10px; border:1px solid #cbd5e1; border-radius:6px;"></div></div>
                     <button class="btn-full" onclick="doAddTea()"><i class="fa-solid fa-check"></i> LƯU HỒ SƠ</button>
-                    <button class="btn-danger btn-full" onclick="clearLocalData()" style="margin-top:12px; background:white; color:var(--danger); border:1px solid var(--danger);"><i class="fa-solid fa-trash"></i> RESET DB</button>
+                    <button class="btn-danger btn-full" onclick="toast('Đã chuyển sang dùng Cơ sở dữ liệu thật (MongoDB). Không thể xóa toàn bộ DB bằng nút này để tránh rủi ro!', 'warn')" style="margin-top:12px; background:white; color:var(--danger); border:1px solid var(--danger);"><i class="fa-solid fa-trash"></i> RESET DB (ĐÃ KHÓA)</button>
                 </div>
             </div>
             <div style="flex:1.5;">
@@ -333,14 +333,14 @@
                 </div>
 
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button class="btn-success" onclick="pubExam()" style="flex:2;"><i class="fa-solid fa-paper-plane"></i> CHỐT ĐỀ & LƯU LÊN BẢNG TIN</button>
+                    <button class="btn-success" onclick="pubExam()" style="flex:2;"><i class="fa-solid fa-paper-plane"></i> CHỐT ĐỀ & LƯU LÊN MÁY CHỦ</button>
                     <button class="btn-outline" onclick="cancelDraft()" style="flex:1; color:var(--danger); border-color:var(--border);"><i class="fa-solid fa-xmark"></i> Hủy / Quay lại</button>
                 </div>
             </div>
         </div>
 
         <div id="teaThongKeArea" class="hidden">
-            <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;"><i class="fa-solid fa-box-archive"></i> ĐỀ ĐÃ PHÁT HÀNH (Chỉnh sửa/Xóa)</h3>
+            <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;"><i class="fa-solid fa-box-archive"></i> ĐỀ ĐÃ PHÁT HÀNH TRÊN MÁY CHỦ (Chỉnh sửa/Xóa)</h3>
             <div id="publishedExamsList" style="margin-bottom:30px; display:grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
             <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;"><i class="fa-solid fa-chart-column"></i> THỐNG KÊ ĐIỂM SỐ</h3>
@@ -364,6 +364,7 @@
             <select id="sFilterSubj" onchange="loadExams()" style="flex:1; max-width:300px; font-size: 16px; font-weight:600; color:var(--primary); border-color:#cbd5e1; cursor: pointer;">
                 <option value="ALL">🌟 Tất cả các môn</option>
             </select>
+            <button class="btn-outline" onclick="syncDB().then(()=>loadExams())" style="padding:10px 16px; font-size:14px;"><i class="fa-solid fa-rotate-right"></i> Làm mới</button>
         </div>
 
         <div id="sList"><div id="eCont"></div></div>
@@ -389,21 +390,27 @@
     let currentExtractedText = "";
 
     const PREDEFINED_CLASSES = ['10A', '10B', '10C', '10D', '10E', '10F', '10G', '11A', '11B', '11C', '11D', '11E', '11F', '11G', '12A', '12B', '12C', '12D', '12E', '12F', '12G', '12H', '12I', '12K'];
-    let examsDB = JSON.parse(localStorage.getItem('sys_exams')) || [];
-    let scoresDB = JSON.parse(localStorage.getItem('sys_scores')) || []; 
+    
+    // Đã gỡ bỏ LocalStorage, dùng biến tạm chờ Sync từ MongoDB
+    let examsDB = [];
+    let scoresDB = []; 
 
-    const saveLocal = () => { 
-        localStorage.setItem('sys_exams', JSON.stringify(examsDB)); 
-        localStorage.setItem('sys_scores', JSON.stringify(scoresDB)); 
-    };
-
-    const clearLocalData = () => { 
-        if(confirm("Xác nhận dọn dẹp Database kho?")) { 
-            localStorage.removeItem('sys_exams'); 
-            localStorage.removeItem('sys_scores'); 
-            examsDB = []; scoresDB = []; 
-            toast("Đã Reset!", "success"); 
-        } 
+    // HÀM MỚI: Đồng bộ dữ liệu 2 chiều từ MongoDB
+    const syncDB = async () => {
+        try {
+            const exRes = await fetch(`${API}/api/exams`);
+            if(exRes.ok) {
+                const exData = await exRes.json();
+                examsDB = exData.data || [];
+            }
+            const scRes = await fetch(`${API}/api/scores`);
+            if(scRes.ok) {
+                const scData = await scRes.json();
+                scoresDB = scData.data || [];
+            }
+        } catch(e) {
+            console.error("Lỗi đồng bộ DB:", e);
+        }
     };
 
     const shuffleArray = (array) => { 
@@ -679,8 +686,12 @@
             const data = await res.json(); 
 
             if(res.ok) { 
-                toast("Đăng nhập thành công!", "success"); 
+                toast("Đăng nhập thành công! Đang tải dữ liệu...", "loading"); 
                 session = data.data; 
+                
+                // Đồng bộ 100% dữ liệu từ máy chủ trước khi hiện giao diện
+                await syncDB();
+
                 $('authSection').style.display = 'none'; 
 
                 if(session.role === 'admin') { 
@@ -932,7 +943,6 @@
 
         let finalCustomPrompt = $('tCustomPrompt').value;
 
-        // BỌC THÉP ÉP BUỘC AI
         if (currentMode === 'generate') {
             finalCustomPrompt = `[CHỈ THỊ TỐI CAO - BẮT BUỘC]: Hãy sáng tác ĐÚNG 15 CÂU HỎI. Cấu trúc CHÍNH XÁC:
 - TỪ CÂU 1 ĐẾN CÂU 12 (12 câu): Thuộc loại "nhiều lựa chọn" (4 đáp án A, B, C, D).
@@ -964,7 +974,6 @@ LƯU Ý CẤU TRÚC:
 
             if(res.ok) { 
                 
-                // THUẬT TOÁN AUTO-CORRECTION: CHÉM CÂU HỎI LỖI
                 let rawData = resData.data;
                 if(rawData && rawData.exam) {
                     rawData.exam.forEach(q => {
@@ -982,7 +991,6 @@ LƯU Ý CẤU TRÚC:
                             let text = q.questionText || "";
                             let subOpts = q.subOptions || [];
                             
-                            // Tự động chém mảng nếu AI gộp chung a, b, c, d
                             if (subOpts.length === 0 || subOpts[0] === "") {
                                 let regexA = /[aA]\s*[\.\)]\s*/;
                                 let regexB = /[bB]\s*[\.\)]\s*/;
@@ -1063,12 +1071,17 @@ LƯU Ý CẤU TRÚC:
         toast("Đã nạp đề cũ vào để chỉnh sửa!", "success");
     };
 
-    window.deletePublishedExam = (id) => {
+    window.deletePublishedExam = async (id) => {
         if(!confirm("Chắc chắn muốn xóa đề thi này? Các điểm số liên quan vẫn sẽ được giữ lại.")) return;
-        examsDB = examsDB.filter(e => e.id !== id);
-        saveLocal();
-        switchTeaTab('thongke'); 
-        toast("Đã xóa đề!", "success");
+        toast("Đang xóa...", "loading");
+        try {
+            await fetch(`${API}/api/exams/delete`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id: id}) });
+            await syncDB();
+            switchTeaTab('thongke'); 
+            toast("Đã xóa đề thành công khỏi máy chủ!", "success");
+        } catch(e) {
+            toast("Lỗi mạng khi xóa!", "error");
+        }
     };
 
     const cleanQuestionText = (text) => {
@@ -1189,6 +1202,7 @@ LƯU Ý CẤU TRÚC:
                     let cleanSubOpt = cleanOptionText(s || ""); 
                     let rawAns = (q.correctAnswers && q.correctAnswers[j]) ? String(q.correctAnswers[j]).toUpperCase().trim() : 'D';
                     let correctAns = (rawAns === 'S' || rawAns.includes('SAI') || rawAns === 'FALSE') ? 'S' : 'D';
+                    
                     html += `<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${correctAns==='D'?'selected':''}>ĐÚNG</option><option value="S" ${correctAns==='S'?'selected':''}>SAI</option></select></div>`;
                 }); 
                 html += `</div>`; 
@@ -1226,7 +1240,7 @@ LƯU Ý CẤU TRÚC:
         editingExamId = null; 
     };
 
-    const pubExam = () => { 
+    const pubExam = async () => { 
         saveCurrentDraftValues(); 
 
         let fQs = drafts.exam; 
@@ -1235,41 +1249,41 @@ LƯU Ý CẤU TRÚC:
         const examDuration = parseInt($('tTime').value) || 45; 
 
         const createTime = Date.now();
+        toast("Đang tải dữ liệu lên máy chủ...", "loading");
 
-        if (editingExamId) {
-            const index = examsDB.findIndex(e => e.id === editingExamId);
-            if(index !== -1) {
-                examsDB[index].targetClass = $('tClass').value;
-                examsDB[index].category = examCategory;
-                examsDB[index].topic = $('tWeek').value;
-                examsDB[index].duration = examDuration;
-                examsDB[index].mindmap = finalMindmap;
-                examsDB[index].questions = fQs;
+        let payload = {
+            targetClass: $('tClass').value, 
+            category: examCategory, 
+            subject: session.teachingSubject, 
+            topic: $('tWeek').value, 
+            duration: examDuration, 
+            mindmap: finalMindmap, 
+            questions: fQs, 
+            teacherName: session.fullname,
+            createdAt: createTime 
+        };
+
+        try {
+            if (editingExamId) {
+                payload.id = editingExamId;
+                await fetch(`${API}/api/exams/delete`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id: editingExamId}) });
+                await fetch(`${API}/api/exams`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+                toast("Đã cập nhật Đề thi thành công!", "success"); 
+            } else {
+                payload.id = "ex_" + Date.now();
+                await fetch(`${API}/api/exams`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+                toast("Đã lưu Đề thi mới lên Máy chủ!", "success"); 
             }
-            toast("Đã cập nhật lại Đề thi & Sơ đồ!", "success"); 
-        } else {
-            examsDB.push({ 
-                id: "ex_"+Date.now(), 
-                targetClass: $('tClass').value, 
-                category: examCategory, 
-                subject: session.teachingSubject, 
-                topic: $('tWeek').value, 
-                duration: examDuration, 
-                mindmap: finalMindmap, 
-                questions: fQs, 
-                teacherName: session.fullname,
-                createdAt: createTime 
-            }); 
-            toast("Đã công bố Đề thi & Sơ đồ lên bảng tin!", "success"); 
+            await syncDB();
+            cancelDraft(); 
+            resetUploader();
+        } catch(e) {
+            toast("Lỗi mạng khi chốt đề!", "error");
         }
-
-        saveLocal(); 
-        cancelDraft(); 
-        resetUploader(); 
     };
 
-    window.viewStudentDetails = (scoreIndex) => {
-        const s = scoresDB[scoreIndex];
+    window.viewStudentDetails = (scoreId) => {
+        const s = scoresDB.find(x => x._id === scoreId);
         const ex = examsDB.find(e => e.id === s.examId);
         if(!ex || !s.details) return toast("Không tìm thấy dữ liệu chi tiết!", "error");
 
@@ -1306,13 +1320,17 @@ LƯU Ý CẤU TRÚC:
         $('reviewModal').style.display = 'flex';
     };
 
-    window.deleteScore = (scoreIndex) => {
+    window.deleteScore = async (scoreId) => {
         if(!confirm("Sếp có chắc chắn muốn xóa bài làm này của học sinh? Dữ liệu điểm sẽ bị bay màu vĩnh viễn!")) return;
-
-        scoresDB.splice(scoreIndex, 1);
-        saveLocal();
-        renderScores();
-        toast("Đã tiễn bài làm này về hư vô!", "success");
+        toast("Đang xóa...", "loading");
+        try {
+            await fetch(`${API}/api/scores/delete`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({_id: scoreId}) });
+            await syncDB();
+            renderScores();
+            toast("Đã xóa điểm thành công!", "success");
+        } catch(e) {
+            toast("Lỗi mạng khi xóa!", "error");
+        }
     };
 
     const renderScores = () => { 
@@ -1329,8 +1347,7 @@ LƯU Ý CẤU TRÚC:
         } 
 
         let h = `<table><tr><th>Tên Bài</th><th>Số lần - Thời gian</th><th>Học sinh</th><th>Điểm</th><th>Thao tác</th></tr>`; 
-        myScores.reverse().forEach((s, originalIndexInReversed) => { 
-            const trueIndex = scoresDB.indexOf(s);
+        myScores.reverse().forEach((s) => { 
             h += `<tr>
                     <td><b>${s.topic}</b><br><small style="color:var(--text-muted);">${s.studentClass}</small></td>
                     <td>Lần ${s.attempt} <br><span style="color:var(--text-muted); font-size:12px;"><i class="fa-regular fa-clock"></i> ${s.time}</span></td>
@@ -1338,8 +1355,8 @@ LƯU Ý CẤU TRÚC:
                     <td><b style="color:var(--danger); font-size:16px;">${s.score}</b></td>
                     <td>
                         <div style="display:flex; gap:5px;">
-                            <button class="btn-outline" style="padding:4px 8px; font-size:12px;" onclick="viewStudentDetails(${trueIndex})">Xem</button>
-                            <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteScore(${trueIndex})"><i class="fa-solid fa-trash"></i></button>
+                            <button class="btn-outline" style="padding:4px 8px; font-size:12px;" onclick="viewStudentDetails('${s._id}')">Xem</button>
+                            <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteScore('${s._id}')"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </td>
                   </tr>`; 
@@ -1622,7 +1639,7 @@ LƯU Ý CẤU TRÚC:
         startTimer(durationSecs, $('examTimerBox'), id);
     };
 
-    const submitExam = (id, isAuto = false) => {
+    const submitExam = async (id, isAuto = false) => {
         if(!isAuto && !confirm("Bạn đã chắc chắn nộp bài chưa?")) return;
         clearInterval(timerInterval); 
 
@@ -1667,18 +1684,25 @@ LƯU Ý CẤU TRÚC:
 
         let finalScore = ((score/currentExamLen)*10).toFixed(2); 
         let now = new Date();
-        scoresDB.push({ 
+        let scorePayload = { 
             examId: id, topic: ex.topic, subject: ex.subject, teacherName: ex.teacherName, 
             studentUsername: session.username, studentName: session.fullname, studentClass: session.studentClass, 
             score: finalScore, time: `${now.getHours()}:${now.getMinutes()} - ${now.getDate()}/${now.getMonth()+1}`,
             attempt: currentAttempt, 
             details: studentAnswers 
-        });
-        saveLocal();
+        };
 
-        $('sDash').innerHTML = `<div class="result-celebration"><h2 style="color:#f59e0b; font-size:32px; margin-top:0; font-weight:900;"><i class="fa-solid fa-trophy"></i> HOÀN THÀNH NHIỆM VỤ!</h2><div class="stat-grid"><div class="stat-box" style="border-color:#bae6fd;"><div class="stat-title">TỔNG ĐIỂM</div><div class="stat-value" style="color:#0ea5e9;">${finalScore}</div></div><div class="stat-box" style="border-color:#bbf7d0;"><div class="stat-title">CHÍNH XÁC HOÀN TOÀN</div><div class="stat-value" style="color:#22c55e;">${perfect}/${currentExamLen}</div></div><div class="stat-box" style="border-color:#fef08a;"><div class="stat-title">LẦN THỬ</div><div class="stat-value" style="color:#eab308;">Lần ${currentAttempt}</div></div></div><button class="game-btn" onclick="quitExam()" style="margin-top:20px;"><i class="fa-solid fa-arrow-left"></i> VỀ SẢNH</button></div>`;
-        $('pBar').style.width = '100%'; $('sDash').style.display='block'; window.scrollTo({top:0, behavior:'smooth'}); 
-        toast("Điểm số đã được ghi nhận!", "success");
+        toast("Đang lưu điểm lên máy chủ...", "loading");
+        try {
+            await fetch(`${API}/api/scores`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(scorePayload) });
+            await syncDB();
+            
+            $('sDash').innerHTML = `<div class="result-celebration"><h2 style="color:#f59e0b; font-size:32px; margin-top:0; font-weight:900;"><i class="fa-solid fa-trophy"></i> HOÀN THÀNH NHIỆM VỤ!</h2><div class="stat-grid"><div class="stat-box" style="border-color:#bae6fd;"><div class="stat-title">TỔNG ĐIỂM</div><div class="stat-value" style="color:#0ea5e9;">${finalScore}</div></div><div class="stat-box" style="border-color:#bbf7d0;"><div class="stat-title">CHÍNH XÁC HOÀN TOÀN</div><div class="stat-value" style="color:#22c55e;">${perfect}/${currentExamLen}</div></div><div class="stat-box" style="border-color:#fef08a;"><div class="stat-title">LẦN THỬ</div><div class="stat-value" style="color:#eab308;">Lần ${currentAttempt}</div></div></div><button class="game-btn" onclick="quitExam()" style="margin-top:20px;"><i class="fa-solid fa-arrow-left"></i> VỀ SẢNH</button></div>`;
+            $('pBar').style.width = '100%'; $('sDash').style.display='block'; window.scrollTo({top:0, behavior:'smooth'}); 
+            toast("Điểm số đã được lưu vĩnh viễn vào Hệ thống!", "success");
+        } catch(e) {
+            toast("Lỗi mạng khi nộp bài!", "error");
+        }
     };
 
     const quitExam = () => { 
