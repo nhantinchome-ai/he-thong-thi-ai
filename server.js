@@ -72,129 +72,24 @@ const Score = mongoose.model('Score', ScoreSchema);
 // ==========================================
 // 2. CÁC API QUẢN LÝ HỆ THỐNG
 // ==========================================
-app.get('/', (req, res) => { 
-    res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); 
-});
-
-app.post('/api/dang-ky', async (req, res) => { 
-    try { 
-        const newUser = new User({ ...req.body, role: 'student', createdAt: Date.now() });
-        await newUser.save();
-        res.status(201).json({ message: "Đăng ký thành công" }); 
-    } catch (error) { 
-        res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" }); 
-    } 
-});
-
+app.get('/', (req, res) => { res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); });
+app.post('/api/dang-ky', async (req, res) => { try { await new User({ ...req.body, role: 'student', createdAt: Date.now() }).save(); res.status(201).json({ message: "Đăng ký thành công" }); } catch (error) { res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" }); } });
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
-        // Quản trị viên
-        if (username === 'admin' && password === 'admin') { 
-            let adminUser = await User.findOne({ username: 'admin' }); 
-            if (!adminUser) { 
-                adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() }); 
-                await adminUser.save(); 
-            } 
-            return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser }); 
-        }
-        
-        // Người dùng bình thường
-        const user = await User.findOne({ username, password }); 
-        if (user) {
-            res.status(200).json({ message: "Thành công", data: user }); 
-        } else {
-            res.status(401).json({ message: "Sai tài khoản mật khẩu!" });
-        }
-    } catch (error) { 
-        res.status(500).json({ message: "Lỗi máy chủ" }); 
-    }
+        if (username === 'admin' && password === 'admin') { let adminUser = await User.findOne({ username: 'admin' }); if (!adminUser) { adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() }); await adminUser.save(); } return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser }); }
+        const user = await User.findOne({ username, password }); if (user) { res.status(200).json({ message: "Thành công", data: user }); } else { res.status(401).json({ message: "Sai tài khoản mật khẩu!" }); }
+    } catch (error) { res.status(500).json({ message: "Lỗi máy chủ" }); }
 });
-
-app.get('/api/admin/tat-ca-users', async (req, res) => { 
-    try { 
-        const users = await User.find({});
-        res.status(200).json({ data: users }); 
-    } catch (error) { 
-        res.status(500).json({ message: "Lỗi truy xuất" }); 
-    } 
-});
-
-app.post('/api/admin/xoa-user', async (req, res) => { 
-    try { 
-        await User.findByIdAndDelete(req.body.userId); 
-        res.status(200).json({ message: "Xóa thành công" }); 
-    } catch (error) { 
-        res.status(500).json({ message: "Lỗi xóa" }); 
-    } 
-});
-
-app.post('/api/tao-giao-vien', async (req, res) => { 
-    try { 
-        const newTeacher = new User({ ...req.body, role: 'teacher', createdAt: Date.now() });
-        await newTeacher.save();
-        res.status(201).json({ message: "Thành công" }); 
-    } catch (error) { 
-        res.status(400).json({ message: "Trùng Tên đăng nhập!" }); 
-    } 
-});
-
-app.post('/api/exams', async (req, res) => { 
-    try { 
-        const newExam = new Exam(req.body);
-        await newExam.save();
-        res.json({ success: true, message: 'Lưu đề thành công!' }); 
-    } catch (err) { 
-        res.status(500).json({ success: false, message: err.message }); 
-    } 
-});
-
-app.get('/api/exams', async (req, res) => { 
-    try { 
-        const exams = await Exam.find();
-        res.json({ success: true, data: exams }); 
-    } catch (err) { 
-        res.status(500).json({ success: false, message: err.message }); 
-    } 
-});
-
-app.post('/api/exams/delete', async (req, res) => { 
-    try { 
-        await Exam.deleteOne({ id: req.body.id }); 
-        res.json({ success: true, message: 'Đã xóa đề!' }); 
-    } catch (err) { 
-        res.status(500).json({ success: false, message: err.message }); 
-    } 
-});
-
-app.post('/api/scores', async (req, res) => { 
-    try { 
-        const newScore = new Score(req.body);
-        await newScore.save();
-        res.json({ success: true, message: 'Lưu điểm thành công!' }); 
-    } catch (err) { 
-        res.status(500).json({ success: false, message: err.message }); 
-    } 
-});
-
-app.get('/api/scores', async (req, res) => { 
-    try { 
-        const scores = await Score.find();
-        res.json({ success: true, data: scores }); 
-    } catch (err) { 
-        res.status(500).json({ success: false, message: err.message }); 
-    } 
-});
-
-app.post('/api/scores/delete', async (req, res) => { 
-    try { 
-        await Score.findByIdAndDelete(req.body._id); 
-        res.json({ success: true, message: 'Đã xóa điểm!' }); 
-    } catch (err) { 
-        res.status(500).json({ success: false, message: err.message }); 
-    } 
-});
+app.get('/api/admin/tat-ca-users', async (req, res) => { try { const users = await User.find({}); res.status(200).json({ data: users }); } catch (error) { res.status(500).json({ message: "Lỗi truy xuất" }); } });
+app.post('/api/admin/xoa-user', async (req, res) => { try { await User.findByIdAndDelete(req.body.userId); res.status(200).json({ message: "Xóa thành công" }); } catch (error) { res.status(500).json({ message: "Lỗi xóa" }); } });
+app.post('/api/tao-giao-vien', async (req, res) => { try { const newTeacher = new User({ ...req.body, role: 'teacher', createdAt: Date.now() }); await newTeacher.save(); res.status(201).json({ message: "Thành công" }); } catch (error) { res.status(400).json({ message: "Trùng Tên đăng nhập!" }); } });
+app.post('/api/exams', async (req, res) => { try { const newExam = new Exam(req.body); await newExam.save(); res.json({ success: true, message: 'Lưu đề thành công!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
+app.get('/api/exams', async (req, res) => { try { const exams = await Exam.find(); res.json({ success: true, data: exams }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
+app.post('/api/exams/delete', async (req, res) => { try { await Exam.deleteOne({ id: req.body.id }); res.json({ success: true, message: 'Đã xóa đề!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
+app.post('/api/scores', async (req, res) => { try { const newScore = new Score(req.body); await newScore.save(); res.json({ success: true, message: 'Lưu điểm thành công!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
+app.get('/api/scores', async (req, res) => { try { const scores = await Score.find(); res.json({ success: true, data: scores }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
+app.post('/api/scores/delete', async (req, res) => { try { await Score.findByIdAndDelete(req.body._id); res.json({ success: true, message: 'Đã xóa điểm!' }); } catch (err) { res.status(500).json({ success: false, message: err.message }); } });
 
 // ==========================================
 // 3. TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN
@@ -203,23 +98,16 @@ function getSmartPrompt(subject, customPrompt) {
     let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
     const subj = (subject || "").toLowerCase();
     
-    if (subj.includes('toán')) {
-        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`;
-    } else if (subj.includes('lý') || subj.includes('vật lí') || subj.includes('công nghệ')) {
-        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số, công thức và đáp án đúng.`;
-    } else if (subj.includes('hóa')) {
-        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`;
-    } else if (subj.includes('sinh')) {
-        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba, trình tự ADN, tỉ lệ kiểu hình.`;
-    } else if (subj.includes('anh') || subj.includes('english')) {
-        return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC CHỈ viết lại lời dẫn bằng tiếng Việt (hoặc tiếng Anh). TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu, 4 đáp án A, B, C, D.`;
-    } else {
-        return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`;
-    }
+    if (subj.includes('toán')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`; } 
+    else if (subj.includes('lý') || subj.includes('vật lí') || subj.includes('công nghệ')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số, công thức và đáp án đúng.`; } 
+    else if (subj.includes('hóa')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`; } 
+    else if (subj.includes('sinh')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba, trình tự ADN, tỉ lệ kiểu hình.`; } 
+    else if (subj.includes('anh') || subj.includes('english')) { return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC CHỈ viết lại lời dẫn bằng tiếng Việt (hoặc tiếng Anh). TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu, 4 đáp án A, B, C, D.`; } 
+    else { return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`; }
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - FULL 4 TÍNH NĂNG CHI TIẾT
+// 4. BỘ NÃO AI OCR - FULL 4 TÍNH NĂNG + BÌNH MỰC KHỔNG LỒ 32768
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -230,7 +118,6 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
         }
 
-        // Đội hình AI ưu tiên chiến mã 3.5-flash
         const modelsToTry = [
             "gemini-3.5-flash",       
             "gemini-1.5-flash",       
@@ -242,18 +129,13 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const customPrompt = req.body.customPrompt; 
         const requestMode = req.body.mode || 'generate';
         
-        // Chuẩn bị mảng chứa hình ảnh đính kèm
         let imageParts = [];
         if (req.body.fileBase64Array && req.body.fileBase64Array.length > 0) {
             req.body.fileBase64Array.forEach(img => { 
-                imageParts.push({ 
-                    inlineData: { data: img.base64, mimeType: img.mimeType } 
-                }); 
+                imageParts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } }); 
             });
         } else if (req.body.fileBase64) {
-            imageParts.push({ 
-                inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } 
-            });
+            imageParts.push({ inlineData: { data: req.body.fileBase64, mimeType: req.body.fileMimeType } });
         }
 
         let isSuccess = false;
@@ -262,12 +144,10 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        // Vòng lặp xoay tua Model
         for (let j = 0; j < modelsToTry.length; j++) {
             if (isSuccess) break;
             const currentModelName = modelsToTry[j];
 
-            // Vòng lặp xoay tua API Key
             for (let i = 0; i < apiKeys.length; i++) {
                 if (isSuccess) break;
                 
@@ -284,15 +164,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     } else {
                         currentInstruction = `\n2. LỆNH CHỐNG RECITATION: Tài liệu có bản quyền. Hãy diễn đạt lại cấu trúc câu trong lời dẫn câu hỏi để tránh vi phạm, nhưng BẮT BUỘC giữ nguyên 100% ý nghĩa, số liệu, công thức, bảng biểu và 4 đáp án.\n`;
                     }
-                    if (customPrompt) {
-                        currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
-                    }
+                    if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
                 } else {
                     if (!isRecitationMode) { 
                         currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC: Hãy sáng tác đề dựa vào tài liệu.\n`; 
-                        if (customPrompt) {
-                            currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; 
-                        }
+                        if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
                     } else { 
                         currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`; 
                     }
@@ -307,7 +183,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                    - Câu hỏi trắc nghiệm Đúng/Sai -> phân loại type là "đúng sai", BẮT BUỘC phải bóc tách rành mạch 4 ý nhỏ a, b, c, d vào mảng "subOptions" và đáp án Đúng/Sai của từng ý vào mảng "correctAnswers".
                 4. Soi hình ảnh và sơ đồ (Mắt thần): Kiểm tra từng câu hỏi vừa trích xuất với tài liệu gốc. Bất cứ câu nào có hình vẽ, sơ đồ mạch điện, bảng biểu hoặc đồ thị, BẮT BUỘC phải viết ghi chú chi tiết vào mảng "teacher_image_notes" để giáo viên biết đường bổ sung.
                 
-                BẮT BUỘC TRẢ VỀ DUY NHẤT CẤU TRÚC JSON CHUẨN SAU ĐÂY (Không viết thêm văn bản giải thích bên ngoài):
+                BẮT BUỘC TRẢ VỀ DUY NHẤT CẤU TRÚC JSON CHUẨN SAU ĐÂY:
                 {
                     "mindmap": "# Tiêu đề chính\n## Nhánh 1\n- Ý chi tiết 1\n## Nhánh 2\n- Ý chi tiết 2",
                     "teacher_image_notes": [ 
@@ -321,17 +197,16 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 Nội dung Text đính kèm: ${documentText || 'Dùng ảnh đính kèm.'}`;
 
                 let promptArray = [promptText];
-                if (imageParts.length > 0) {
-                    promptArray = promptArray.concat(imageParts);
-                }
+                if (imageParts.length > 0) { promptArray = promptArray.concat(imageParts); }
 
                 try {
-                    // Khởi tạo Model với temperature: 0.1 để AI tập trung bóc tách OCR tối đa, không lảm nhảm
+                    // 🌟 BÌNH MỰC KHỔNG LỒ 32768 + ÉP KIỂU JSON CHUẨN ĐỂ CHỐNG LỖI PARSE 🌟
                     const model = genAI.getGenerativeModel({ 
                         model: currentModelName, 
                         generationConfig: { 
-                            maxOutputTokens: 8192,
-                            temperature: 0.1 
+                            maxOutputTokens: 32768,             // Gấp 4 lần giới hạn cũ, gõ 5 trang thoải mái không sợ đứt đuôi
+                            temperature: 0.1,                   // Siêu chính xác, không lảm nhảm
+                            responseMimeType: "application/json" // ÉP 100% trả về JSON chuẩn, không bao giờ lỗi ngoặc
                         } 
                     });
                     
@@ -340,13 +215,10 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     let rawText = result.response.text();
                     rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-                    // Tìm và cắt chuẩn vùng JSON
                     let startIndex = rawText.indexOf('{');
                     let endIndex = rawText.lastIndexOf('}');
                     
-                    if (startIndex === -1 || endIndex === -1) {
-                        throw new Error("JSON_NOT_FOUND: AI không sinh ra cấu trúc JSON.");
-                    }
+                    if (startIndex === -1 || endIndex === -1) { throw new Error("JSON_NOT_FOUND: AI không sinh ra cấu trúc JSON."); }
                     
                     let cleanJsonString = rawText.substring(startIndex, endIndex + 1);
 
@@ -356,9 +228,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                         throw new Error("JSON_PARSE_ERROR");
                     }
 
-                    if (!finalResult.exam || finalResult.exam.length <= 1) {
-                        throw new Error("SILENT_BLOCK");
-                    }
+                    if (!finalResult.exam || finalResult.exam.length <= 1) { throw new Error("SILENT_BLOCK"); }
 
                     isSuccess = true;
                     console.log(`✅ THÀNH CÔNG VỚI [${currentModelName}]! Đã bóc tách đủ ${finalResult.exam.length} câu!`);
