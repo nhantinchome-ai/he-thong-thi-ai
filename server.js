@@ -19,45 +19,24 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 
 // ==========================================
 // 1. KẾT NỐI MONGODB VÀ SCHEMAS
 // ==========================================
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("✅ Đã thông mạch với MongoDB!"))
-    .catch(err => console.error("❌ Lỗi kết nối MongoDB:", err));
-
-const userSchema = new mongoose.Schema({
-    fullname: { type: String, required: true }, username: { type: String, required: true, unique: true },
-    password: { type: String, required: true }, role: { type: String, enum: ['admin', 'teacher', 'student'], default: 'student' },
-    grade: String, studentClass: String, homeroomClass: String, teachingSubject: String, teachingClasses: String,
-    createdAt: { type: Number, default: () => Date.now() } 
-});
+mongoose.connect(process.env.MONGODB_URI).then(() => console.log("✅ Đã thông mạch với MongoDB!")).catch(err => console.error("❌ Lỗi kết nối MongoDB:", err));
+const userSchema = new mongoose.Schema({ fullname: { type: String, required: true }, username: { type: String, required: true, unique: true }, password: { type: String, required: true }, role: { type: String, enum: ['admin', 'teacher', 'student'], default: 'student' }, grade: String, studentClass: String, homeroomClass: String, teachingSubject: String, teachingClasses: String, createdAt: { type: Number, default: () => Date.now() } });
 const User = mongoose.model('User', userSchema);
-
-const ExamSchema = new mongoose.Schema({
-    id: String, targetClass: String, category: String, subject: String, topic: String, duration: Number, mindmap: String, questions: Array,
-    teacherName: String, createdAt: Number
-});
+const ExamSchema = new mongoose.Schema({ id: String, targetClass: String, category: String, subject: String, topic: String, duration: Number, mindmap: String, questions: Array, teacherName: String, createdAt: Number });
 const Exam = mongoose.model('Exam', ExamSchema);
-
-const ScoreSchema = new mongoose.Schema({
-    examId: String, topic: String, subject: String, teacherName: String, studentUsername: String, studentName: String, studentClass: String,
-    score: String, time: String, attempt: Number, details: Array
-});
+const ScoreSchema = new mongoose.Schema({ examId: String, topic: String, subject: String, teacherName: String, studentUsername: String, studentName: String, studentClass: String, score: String, time: String, attempt: Number, details: Array });
 const Score = mongoose.model('Score', ScoreSchema);
 
 // ==========================================
-// 2. CÁC API QUẢN LÝ
+// 2. CÁC API QUẢN LÝ (RÚT GỌN)
 // ==========================================
 app.get('/', (req, res) => { res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); });
 app.post('/api/dang-ky', async (req, res) => { try { await new User({ ...req.body, role: 'student', createdAt: Date.now() }).save(); res.status(201).json({ message: "Đăng ký thành công" }); } catch (error) { res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" }); } });
 app.post('/api/dang-nhap', async (req, res) => {
     try {
         const { username, password } = req.body;
-        if (username === 'admin' && password === 'admin') {
-            let adminUser = await User.findOne({ username: 'admin' });
-            if (!adminUser) { adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() }); await adminUser.save(); }
-            return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser });
-        }
-        const user = await User.findOne({ username, password });
-        if (user) res.status(200).json({ message: "Thành công", data: user }); else res.status(401).json({ message: "Sai tài khoản mật khẩu!" });
+        if (username === 'admin' && password === 'admin') { let adminUser = await User.findOne({ username: 'admin' }); if (!adminUser) { adminUser = new User({ fullname: 'Quản trị viên', username: 'admin', password: 'admin', role: 'admin', createdAt: Date.now() }); await adminUser.save(); } return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser }); }
+        const user = await User.findOne({ username, password }); if (user) res.status(200).json({ message: "Thành công", data: user }); else res.status(401).json({ message: "Sai tài khoản mật khẩu!" });
     } catch (error) { res.status(500).json({ message: "Lỗi máy chủ" }); }
 });
 app.get('/api/admin/tat-ca-users', async (req, res) => { try { res.status(200).json({ data: await User.find({}) }); } catch (error) { res.status(500).json({ message: "Lỗi truy xuất" }); } });
@@ -76,22 +55,16 @@ app.post('/api/scores/delete', async (req, res) => { try { await Score.findByIdA
 function getSmartPrompt(subject, customPrompt) {
     let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
     const subj = (subject || "").toLowerCase();
-    if (subj.includes('toán')) return base + `[CHỈ THỊ TỐI MẬT - MÔN TOÁN HỌC]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`;
-    else if (subj.includes('lý') || subj.includes('vật lí')) return base + `[CHỈ THỊ TỐI MẬT - MÔN VẬT LÍ]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số kỹ thuật, công thức và đáp án đúng.`;
-    else if (subj.includes('hóa')) return base + `[CHỈ THỊ TỐI MẬT - MÔN HÓA HỌC]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`;
-    else if (subj.includes('sinh')) return base + `[CHỈ THỊ TỐI MẬT - MÔN SINH HỌC]: BẮT BUỘC diễn đạt lại câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba, trình tự ADN, tỉ lệ kiểu hình.`;
-    else if (subj.includes('tin') || subj.includes('lập trình')) return base + `[CHỈ THỊ TỐI MẬT - MÔN TIN HỌC]: BẮT BUỘC viết lại lời hỏi. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã code, cú pháp, thuật toán.`;
-    else if (subj.includes('văn')) return base + `[CHỈ THỊ TỐI MẬT - MÔN NGỮ VĂN]: BẮT BUỘC diễn đạt lại câu hỏi. TUYỆT ĐỐI KHÔNG sửa câu chữ trong ĐOẠN VĂN BẢN TRÍCH DẪN, ĐOẠN THƠ!`;
-    else if (subj.includes('sử')) return base + `[CHỈ THỊ TỐI MẬT - MÔN LỊCH SỬ]: BẮT BUỘC viết lại câu hỏi. TUYỆT ĐỐI GIỮ NGUYÊN 100% ngày tháng năm, tên nhân vật, chiến dịch.`;
-    else if (subj.includes('địa')) return base + `[CHỈ THỊ TỐI MẬT - MÔN ĐỊA LÍ]: BẮT BUỘC diễn đạt lại lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% số liệu, tọa độ địa lí, tên quốc gia.`;
-    else if (subj.includes('gdcd') || subj.includes('pháp luật') || subj.includes('kinh tế')) return base + `[CHỈ THỊ TỐI MẬT - GDCD]: Với câu hỏi tình huống, ĐƯỢC PHÉP thay đổi tên nhân vật. TUYỆT ĐỐI GIỮ NGUYÊN các Điều, Khoản Luật.`;
-    else if (subj.includes('anh') || subj.includes('ngoại ngữ') || subj.includes('english')) return base + `[CHỈ THỊ TỐI MẬT - MÔN TIẾNG ANH]: BẮT BUỘC CHỈ viết lại lời dẫn bằng tiếng Việt (hoặc tiếng Anh). TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu, 4 đáp án A, B, C, D.`;
-    else if (subj.includes('công nghệ')) return base + `[CHỈ THỊ TỐI MẬT - MÔN CÔNG NGHỆ]: BẮT BUỘC diễn đạt lại lời văn. TUYỆT ĐỐI GIỮ NGUYÊN 100% thông số kỹ thuật, kích thước bản vẽ, quy trình chuẩn.`;
+    if (subj.includes('toán')) return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`;
+    else if (subj.includes('lý') || subj.includes('vật lí')) return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số, công thức và đáp án đúng.`;
+    else if (subj.includes('hóa')) return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`;
+    else if (subj.includes('sinh')) return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mã bộ ba, trình tự ADN, tỉ lệ kiểu hình.`;
+    else if (subj.includes('anh') || subj.includes('english')) return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC CHỈ viết lại lời dẫn bằng tiếng Việt (hoặc tiếng Anh). TUYỆT ĐỐI GIỮ NGUYÊN 100% bài đọc hiểu, 4 đáp án A, B, C, D.`;
     else return base + `[CHỈ THỊ TỐI MẬT - CHUNG]: Bắt buộc diễn đạt lại câu hỏi bằng từ đồng nghĩa. Giữ nguyên 100% dữ liệu cốt lõi và đáp án.`;
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - CÒI BÁO ĐỘNG LỖI
+// 4. BỘ NÃO AI OCR - CHẠY TỰ DO KHÔNG KIM CÔ
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -99,7 +72,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(k => k !== "");
         if (apiKeys.length === 0) return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
 
-        const modelsToTry = ["gemini-3.5-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-3.1-flash-lite"];
+        const modelsToTry = ["gemini-1.5-pro", "gemini-3.5-flash", "gemini-1.5-flash", "gemini-3.1-flash-lite"];
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
         const documentText = req.body.documentText;
         const customPrompt = req.body.customPrompt; 
@@ -135,12 +108,8 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     currentInstruction = `\n2. LỆNH TỐI CAO CỦA QUÉT ĐỀ: BẮT BUỘC trích xuất CHÍNH XÁC 100% nguyên văn bản gốc. TUYỆT ĐỐI KHÔNG ĐƯỢC tóm tắt hay cắt xén. Có bao nhiêu câu phải quét đủ bấy nhiêu.\n`;
                     if (customPrompt) currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
                 } else {
-                    if (!isRecitationMode) {
-                        currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC: Hãy sáng tác đề dựa vào tài liệu.\n`;
-                        if (customPrompt) currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
-                    } else {
-                        currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`;
-                    }
+                    if (!isRecitationMode) { currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC: Hãy sáng tác đề dựa vào tài liệu.\n`; if (customPrompt) currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; } 
+                    else { currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`; }
                 }
 
                 let promptText = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Đọc tài liệu đính kèm và thực hiện:
@@ -151,7 +120,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                    - Đúng/Sai -> loại "đúng sai", BẮT BUỘC tách 4 ý nhỏ a,b,c,d vào "subOptions", đáp án D/S vào "correctAnswers".
                 4. TÌM HÌNH ẢNH: Đối chiếu câu vừa viết với đề gốc. BẤT CỨ CÂU NÀO CÓ HÌNH ẢNH, SƠ ĐỒ, BẢNG BIỂU, hãy ghi chú chi tiết vào "teacher_image_notes".
                 
-                BẮT BUỘC TRẢ VỀ JSON:
+                BẮT BUỘC TRẢ VỀ JSON SAU:
                 {
                     "mindmap": "Nội dung...",
                     "teacher_image_notes": [ { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Sơ đồ mạch điện" } ],
@@ -165,25 +134,36 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 if (imageParts.length > 0) promptArray = promptArray.concat(imageParts);
 
                 try {
-                    const model = genAI.getGenerativeModel({ model: currentModelName, generationConfig: { responseMimeType: "application/json", maxOutputTokens: 8192 } });
+                    // 👉 GỠ BỎ HOÀN TOÀN VÒNG KIM CÔ responseMimeType: "application/json" CHUẨN Ý SẾP!
+                    const model = genAI.getGenerativeModel({ model: currentModelName, generationConfig: { maxOutputTokens: 8192 } });
+                    
                     const result = await model.generateContent(promptArray);
-                    let responseText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-                    finalResult = JSON.parse(responseText);
+                    let responseText = result.response.text();
+                    
+                    // Tự động dọn dẹp markdown theo cơ chế cũ
+                    responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+                    // TRẠM SƠ CỨU JSON RÁCH ĐUÔI
+                    try {
+                        finalResult = JSON.parse(responseText);
+                    } catch(e) {
+                        try { finalResult = JSON.parse(responseText + "]}"); } 
+                        catch(e2) {
+                            try { finalResult = JSON.parse(responseText + "}]}"); } 
+                            catch(e3) { throw new Error("JSON_PARSE_ERROR"); }
+                        }
+                    }
 
                     if (!finalResult.exam || finalResult.exam.length <= 1) throw new Error("SILENT_BLOCK");
                     isSuccess = true;
                     console.log(`✅ THÀNH CÔNG! Đã quét xong ${finalResult.exam.length} câu!`);
 
                 } catch (error) {
-                    // ĐÃ KHÔI PHỤC CÒI BÁO LỖI Ở ĐÂY SẾP NHÉ!
                     console.error(`❌ [Key ${i+1}] BÁO LỖI:`, error.message);
                     
                     if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
-                        if (requestMode === 'scan') {
-                            await sleep(3000);
-                        } else {
-                            if (!isRecitationMode) { await sleep(3000); isRecitationMode = true; i--; continue; }
-                        }
+                        if (requestMode === 'scan') { await sleep(3000); } 
+                        else { if (!isRecitationMode) { await sleep(3000); isRecitationMode = true; i--; continue; } }
                     } else {
                         await sleep(3000); 
                     }
