@@ -14,14 +14,14 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Cấu hình Multer nhận file từ Web
+// Cấu hình Multer nhận file
 const upload = multer({ 
     storage: multer.memoryStorage(),
     limits: { fileSize: 50 * 1024 * 1024 } 
 });
 
 // ==========================================
-// 1. KẾT NỐI CƠ SỞ DỮ LIỆU MONGODB
+// 1. KẾT NỐI MONGODB VÀ SCHEMAS
 // ==========================================
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log("✅ Đã thông mạch với MongoDB!"))
@@ -53,9 +53,9 @@ const ScoreSchema = new mongoose.Schema({
 const Score = mongoose.model('Score', ScoreSchema);
 
 // ==========================================
-// 2. CÁC API QUẢN LÝ TÀI KHOẢN
+// 2. CÁC API QUẢN LÝ (USERS, EXAMS, SCORES)
 // ==========================================
-app.get('/', (req, res) => { res.status(200).send('✅ Máy chủ Backend Khảo Thí AI đang hoạt động!'); });
+app.get('/', (req, res) => { res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); });
 
 app.post('/api/dang-ky', async (req, res) => {
     try {
@@ -77,82 +77,58 @@ app.post('/api/dang-nhap', async (req, res) => {
             return res.status(200).json({ message: "Đăng nhập Admin", data: adminUser });
         }
         const user = await User.findOne({ username, password });
-        if (user) { res.status(200).json({ message: "Đăng nhập thành công", data: user }); } 
-        else { res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu!" }); }
+        if (user) res.status(200).json({ message: "Thành công", data: user }); 
+        else res.status(401).json({ message: "Sai tài khoản mật khẩu!" });
     } catch (error) { res.status(500).json({ message: "Lỗi máy chủ" }); }
 });
 
 app.get('/api/admin/tat-ca-users', async (req, res) => {
-    try {
-        const users = await User.find({});
-        res.status(200).json({ data: users });
-    } catch (error) { res.status(500).json({ message: "Lỗi truy xuất" }); }
+    try { res.status(200).json({ data: await User.find({}) }); } 
+    catch (error) { res.status(500).json({ message: "Lỗi truy xuất" }); }
 });
 
 app.post('/api/admin/xoa-user', async (req, res) => {
-    try {
-        await User.findByIdAndDelete(req.body.userId);
-        res.status(200).json({ message: "Đã xóa thành công" });
-    } catch (error) { res.status(500).json({ message: "Lỗi xóa" }); }
+    try { await User.findByIdAndDelete(req.body.userId); res.status(200).json({ message: "Xóa thành công" }); } 
+    catch (error) { res.status(500).json({ message: "Lỗi xóa" }); }
 });
 
 app.post('/api/tao-giao-vien', async (req, res) => {
-    try {
-        const newTeacher = new User({ ...req.body, role: 'teacher', createdAt: Date.now() });
-        await newTeacher.save();
-        res.status(201).json({ message: "Tạo giáo viên thành công", data: newTeacher });
-    } catch (error) { res.status(400).json({ message: "Trùng Tên đăng nhập!" }); }
+    try { await new User({ ...req.body, role: 'teacher', createdAt: Date.now() }).save(); res.status(201).json({ message: "Thành công" }); } 
+    catch (error) { res.status(400).json({ message: "Trùng Tên đăng nhập!" }); }
 });
 
-// ==========================================
-// 3. CÁC API QUẢN LÝ ĐỀ THI & ĐIỂM SỐ
-// ==========================================
 app.post('/api/exams', async (req, res) => {
-    try {
-        const newExam = new Exam(req.body);
-        await newExam.save();
-        res.json({ success: true, message: 'Lưu đề thành công!' });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    try { await new Exam(req.body).save(); res.json({ success: true, message: 'Lưu đề thành công!' }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 app.get('/api/exams', async (req, res) => {
-    try {
-        const exams = await Exam.find();
-        res.json({ success: true, data: exams });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    try { res.json({ success: true, data: await Exam.find() }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 app.post('/api/exams/delete', async (req, res) => {
-    try {
-        await Exam.deleteOne({ id: req.body.id });
-        res.json({ success: true, message: 'Đã xóa đề!' });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    try { await Exam.deleteOne({ id: req.body.id }); res.json({ success: true, message: 'Đã xóa đề!' }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 app.post('/api/scores', async (req, res) => {
-    try {
-        const newScore = new Score(req.body);
-        await newScore.save();
-        res.json({ success: true, message: 'Lưu điểm thành công!' });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    try { await new Score(req.body).save(); res.json({ success: true, message: 'Lưu điểm thành công!' }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 app.get('/api/scores', async (req, res) => {
-    try {
-        const scores = await Score.find();
-        res.json({ success: true, data: scores });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    try { res.json({ success: true, data: await Score.find() }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 app.post('/api/scores/delete', async (req, res) => {
-    try {
-        await Score.findByIdAndDelete(req.body._id);
-        res.json({ success: true, message: 'Đã xóa điểm!' });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    try { await Score.findByIdAndDelete(req.body._id); res.json({ success: true, message: 'Đã xóa điểm!' }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 // ==========================================
-// TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN
+// TỪ ĐIỂN THẦN CHÚ LÁCH BẢN QUYỀN (11 MÔN)
 // ==========================================
 function getSmartPrompt(subject, customPrompt) {
     let base = customPrompt && customPrompt.trim() !== "" ? `\nLệnh Tùy Chỉnh từ GV: ${customPrompt}\n` : "";
@@ -173,7 +149,7 @@ function getSmartPrompt(subject, customPrompt) {
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - QUÉT CHUẨN 100% VÀ TÌM MẮT THẦN HÌNH ẢNH
+// 4. BỘ NÃO AI OCR - CHỐNG TỪ CHỐI NGẦM
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     let tempFilePath = null;
@@ -216,32 +192,30 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 const genAI = new GoogleGenerativeAI(currentKey);
                 const fileManager = new GoogleAIFileManager(currentKey);
                 
-                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
+                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI (THẦN CHÚ 11 MÔN)" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
                 console.log(`🔄 Đang thử: [Model ${currentModelName}] + [Key ${i+1}] - ${modeText}...`);
 
                 let currentInstruction = "";
                 if (!isRecitationMode) {
-                    currentInstruction = `\n2. NHIỆM VỤ OCR: BẮT BUỘC trích xuất chính xác văn bản gốc.\n`;
+                    currentInstruction = `\n2. NHIỆM VỤ OCR: BẮT BUỘC trích xuất chính xác 100% văn bản gốc. Tuyệt đối không được thêm bớt chữ.\n`;
                     if (customPrompt) currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
                 } else {
                     currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`;
                 }
 
-                // 🔥 ĐÃ GỠ BỎ KHÓA XÍCH 15 CÂU - AI ĐƯỢC TỰ DO QUÉT 100% VÀ BỊ ÉP PHẢI NHÌN HÌNH ẢNH
                 const prompt = `Bạn là hệ thống trích xuất dữ liệu giáo dục. Hãy đọc tài liệu đính kèm và thực hiện:
                 1. Tạo một Sơ đồ tư duy (Mindmap) tóm tắt.
                 ${currentInstruction}
-                3. QUY TẮC BẢO TOÀN SỐ LƯỢNG VÀ CẤU TRÚC:
-                   - NẾU ĐÂY LÀ QUÉT ĐỀ: BẮT BUỘC phải giữ lại và trích xuất TOÀN BỘ 100% CÁC CÂU HỎI có trong tài liệu (dù là 28, 40 hay 50 câu). TUYỆT ĐỐI KHÔNG ĐƯỢC CẮT XÉN BỎ CÂU!
+                3. QUY TẮC BẢO TOÀN SỐ LƯỢNG: Trích xuất TOÀN BỘ 100% CÁC CÂU HỎI có trong tài liệu (Bao nhiêu câu lấy bấy nhiêu). TUYỆT ĐỐI KHÔNG ĐƯỢC CẮT XÉN!
                    - Câu Trắc nghiệm 4 đáp án -> loại "nhiều lựa chọn".
-                   - Câu Đúng/Sai -> loại "đúng sai", BẮT BUỘC tách 4 ý nhỏ a,b,c,d vào "subOptions", đáp án D/S vào "correctAnswers". TUYỆT ĐỐI KHÔNG gộp chung 4 ý vào 1 câu dẫn.
-                4. CẢNH BÁO QUÉT HÌNH ẢNH/BẢNG BIỂU (MẮT THẦN): Nếu trong tài liệu gốc CÓ BẤT KỲ CÂU NÀO CHỨA HÌNH ẢNH, SƠ ĐỒ, ĐỒ THỊ, BẢNG BIỂU... bạn BẮT BUỘC phải phát hiện ra và ghi chú rõ ràng vào mảng "teacher_image_notes". Tuyệt đối không được mù mờ bỏ sót!
+                   - Câu Đúng/Sai -> loại "đúng sai", BẮT BUỘC tách 4 ý nhỏ a,b,c,d vào "subOptions", đáp án D/S vào "correctAnswers".
+                4. CẢNH BÁO QUÉT HÌNH ẢNH: Nếu CÓ BẤT KỲ CÂU NÀO CHỨA HÌNH ẢNH/ĐỒ THỊ, bạn BẮT BUỘC ghi chú rõ vào mảng "teacher_image_notes".
                 
-                BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON CHUẨN (KHÔNG BỌC TRONG MARKDOWN \`\`\`):
+                BẮT BUỘC TRẢ VỀ JSON CHUẨN:
                 {
                     "mindmap": "Nội dung...",
                     "teacher_image_notes": [
-                        { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Gắn sơ đồ mạch điện vào đây" }
+                        { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Sơ đồ mạch điện" }
                     ],
                     "exam": [
                         {
@@ -249,12 +223,6 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                             "questionText": "Câu 1: Nội dung câu hỏi?",
                             "options": ["A. Đáp án 1", "B. Đáp án 2", "C. Đáp án 3", "D. Đáp án 4"],
                             "correctAnswer": "A"
-                        },
-                        {
-                            "type": "đúng sai",
-                            "questionText": "Câu 2: Nội dung câu dẫn mệnh đề?",
-                            "subOptions": ["Mệnh đề 1", "Mệnh đề 2", "Mệnh đề 3", "Mệnh đề 4"],
-                            "correctAnswers": ["D", "S", "D", "S"]
                         }
                     ]
                 }
@@ -280,21 +248,29 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
                     responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
                     finalResult = JSON.parse(responseText);
+
+                    // 🚨 MÁY QUÉT NÓI DỐI: NẾU AI TỪ CHỐI NGẦM TRẢ VỀ 0 CÂU -> BẮT LỖI NGAY!
+                    if (!finalResult.exam || finalResult.exam.length === 0) {
+                        throw new Error("SILENT_BLOCK: AI trả về 0 câu hỏi (Bị chặn bản quyền ngầm).");
+                    }
+
                     isSuccess = true;
-                    console.log(`✅ THÀNH CÔNG RỰC RỠ! Đã quét xong đề!`);
+                    console.log(`✅ THÀNH CÔNG RỰC RỠ! Đã quét xong ${finalResult.exam.length} câu!`);
 
                 } catch (error) {
                     console.error(`❌ Thất bại:`, error.message);
                     
-                    if (error.message && error.message.includes('RECITATION')) {
+                    // CHUẨN Ý SẾP: KHI BỊ CHẶN BẢN QUYỀN -> PHANH 3 GIÂY -> BƠM LỆNH TÙY CHỌN 11 MÔN (XÀO BÀI)
+                    if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
                         if (!isRecitationMode) {
-                            console.log(`⚠️ Google bắt bản quyền! Hệ thống QUAY XE xào bài...`);
-                            isRecitationMode = true; 
-                            i--; 
+                            console.log(`⚠️ Phát hiện dính bản quyền (Nguyên bản lỗi)! Phanh 3s rồi QUAY XE xào bài...`);
+                            await sleep(3000); // PHANH 3 GIÂY ĐÚNG Ý SẾP
+                            isRecitationMode = true; // Bật khiên thần chú 11 môn
+                            i--; // Lùi lại 1 bước để thử lại bằng Key này
                             continue; 
                         }
                     }
-                    console.log("⏳ Kẹt mạng -> Kích hoạt phanh 3 giây rồi thử lại...");
+                    console.log("⏳ Kẹt mạng hoặc đã xào bài vẫn xịt -> Phanh 3 giây đổi Key...");
                     await sleep(3000); 
                 }
             }
@@ -303,7 +279,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
         
         if (isSuccess) return res.status(200).json({ data: finalResult });
-        else return res.status(503).json({ message: "Máy chủ đang quá tải. Sếp đợi 1 phút rồi bấm lại nhé!" });
+        else return res.status(503).json({ message: "Máy chủ AI đang từ chối đọc tài liệu này. Sếp vui lòng cắt bớt trang hoặc quét lại!" });
 
     } catch (error) {
         if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
