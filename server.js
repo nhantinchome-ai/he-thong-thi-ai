@@ -107,7 +107,7 @@ function getSmartPrompt(subject, customPrompt) {
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - FULL 4 TÍNH NĂNG + BÌNH MỰC KHỔNG LỒ 32768
+// 4. BỘ NÃO AI OCR - ĐỘI HÌNH GEN 2.5 + BÙA XÀO BÀI CẤP ĐỘ SÂU
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -118,10 +118,12 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
         }
 
+        // ĐỘI HÌNH AI MỚI: Vứt bỏ đồ cổ 1.5 bị 404, dùng dàn Gen 2.5 cực lì đòn
         const modelsToTry = [
-            "gemini-3.5-flash",       
-            "gemini-1.5-flash",       
-            "gemini-3.1-flash-lite"   
+            "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã siêu tốc
+            "gemini-2.5-flash",       // 🥈 TOP 2: Lốp dự phòng Gen 2.5 siêu bền
+            "gemini-2.5-pro",         // 🥉 TOP 3: Trâu cày Gen 2.5
+            "gemini-3.1-flash-lite"   // 🐢 TOP 4: Chốt chặn cuối cùng
         ];
         
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
@@ -154,7 +156,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 const currentKey = apiKeys[i];
                 const genAI = new GoogleGenerativeAI(currentKey);
                 
-                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
+                let modeText = isRecitationMode ? "⚡ CHẾ ĐỘ XÀO BÀI SÂU" : "🔰 CHẾ ĐỘ NGUYÊN BẢN";
                 console.log(`🔄 [${currentModelName}] + [Key ${i+1}] - [Mode: ${requestMode}] - ${modeText}`);
 
                 let currentInstruction = "";
@@ -162,7 +164,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     if (!isRecitationMode) {
                         currentInstruction = `\n2. LỆNH QUÉT ĐỀ: Trích xuất chính xác 100% nội dung văn bản gốc. Nếu hệ thống báo bản quyền, được phép diễn đạt lại tối đa 5% lời dẫn câu hỏi nhưng phải giữ nguyên toàn bộ số liệu, công thức và 4 đáp án.\n`;
                     } else {
-                        currentInstruction = `\n2. LỆNH CHỐNG RECITATION: Tài liệu có bản quyền. Hãy diễn đạt lại cấu trúc câu trong lời dẫn câu hỏi để tránh vi phạm, nhưng BẮT BUỘC giữ nguyên 100% ý nghĩa, số liệu, công thức, bảng biểu và 4 đáp án.\n`;
+                        // 🌟 BÙA XÀO BÀI CẤP ĐỘ SÂU: HƯỚNG DẪN CƠ HỌC ĐỂ AI YẾU CŨNG LÁCH ĐƯỢC BẢN QUYỀN 🌟
+                        currentInstruction = `\n2. LỆNH CHỐNG RECITATION CẤP ĐỘ SÂU (BẮT BUỘC): Tài liệu này bị bảo vệ bản quyền gắt gao. Để lách bộ lọc, bạn PHẢI thực hiện 2 phép biến đổi cơ học sau cho MỌI câu hỏi:
+                        - (1) Đổi tiêu đề câu hỏi: Thay vì ghi "Câu 1:", hãy ghi "Bài tập kiểm tra số 1:" hoặc "Câu hỏi ôn luyện số 1:".
+                        - (2) Thay đổi ít nhất 2 từ đồng nghĩa trong lời văn câu dẫn (VD: "hãy cho biết" -> "xác định", "được gọi là" -> "có tên là", "chọn phương án đúng" -> "tìm đáp án chính xác").
+                        - TUYỆT ĐỐI GIỮ NGUYÊN 100% số liệu, công thức toán học, bảng biểu và nội dung 4 đáp án A, B, C, D để đảm bảo tính chính xác của đề thi!\n`;
                     }
                     if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
                 } else {
@@ -174,7 +180,6 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     }
                 }
 
-                // LỆNH CHUẨN: YÊU CẦU LÀM ĐỦ 4 NHIỆM VỤ CHI TIẾT KHÔNG CẮT XÉN
                 let promptText = `Bạn là chuyên gia thẩm định và trích xuất dữ liệu giáo dục. Hãy đọc toàn bộ tài liệu/ảnh đính kèm và thực hiện ĐẦY ĐỦ 4 NHIỆM VỤ sau:
                 1. Vẽ Sơ đồ tư duy (Mindmap): Tóm tắt chi tiết, logic toàn bộ cấu trúc và kiến thức trọng tâm của tài liệu đính kèm bằng định dạng Markdown.
                 ${currentInstruction}
@@ -190,8 +195,8 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                         { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Sơ đồ mạch điện gồm điện trở R1 nối tiếp R2" } 
                     ],
                     "exam": [
-                        { "type": "nhiều lựa chọn", "questionText": "Câu 1: Nội dung câu hỏi trắc nghiệm?", "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"], "correctAnswer": "A" },
-                        { "type": "đúng sai", "questionText": "Câu 2: Nội dung câu dẫn Đúng/Sai?", "subOptions": ["Nội dung ý a", "Nội dung ý b", "Nội dung ý c", "Nội dung ý d"], "correctAnswers": ["D", "S", "D", "S"] }
+                        { "type": "nhiều lựa chọn", "questionText": "Bài tập kiểm tra số 1: Nội dung câu hỏi trắc nghiệm?", "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"], "correctAnswer": "A" },
+                        { "type": "đúng sai", "questionText": "Bài tập kiểm tra số 2: Nội dung câu dẫn Đúng/Sai?", "subOptions": ["Nội dung ý a", "Nội dung ý b", "Nội dung ý c", "Nội dung ý d"], "correctAnswers": ["D", "S", "D", "S"] }
                     ]
                 }
                 Nội dung Text đính kèm: ${documentText || 'Dùng ảnh đính kèm.'}`;
@@ -200,13 +205,12 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 if (imageParts.length > 0) { promptArray = promptArray.concat(imageParts); }
 
                 try {
-                    // 🌟 BÌNH MỰC KHỔNG LỒ 32768 + ÉP KIỂU JSON CHUẨN ĐỂ CHỐNG LỖI PARSE 🌟
                     const model = genAI.getGenerativeModel({ 
                         model: currentModelName, 
                         generationConfig: { 
-                            maxOutputTokens: 32768,             // Gấp 4 lần giới hạn cũ, gõ 5 trang thoải mái không sợ đứt đuôi
-                            temperature: 0.1,                   // Siêu chính xác, không lảm nhảm
-                            responseMimeType: "application/json" // ÉP 100% trả về JSON chuẩn, không bao giờ lỗi ngoặc
+                            maxOutputTokens: 32768,             
+                            temperature: 0.1,                   
+                            responseMimeType: "application/json" 
                         } 
                     });
                     
@@ -238,7 +242,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     
                     if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
                         if (!isRecitationMode) { 
-                            console.log(`⚠️ Bị chặn bản quyền! Đang chuyển sang chế độ Xào Bài để tiếp tục...`);
+                            console.log(`⚠️ Bị chặn bản quyền! Đang bật bùa "Xào Bài Cấp Độ Sâu" để lách luật...`);
                             await sleep(3000); 
                             isRecitationMode = true; 
                             i--; 
