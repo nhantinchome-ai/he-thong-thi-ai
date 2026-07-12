@@ -107,7 +107,7 @@ function getSmartPrompt(subject, customPrompt) {
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - TỨ TRỤ TRIỀU ĐÌNH ĐÁNH 5 TRANG
+// 4. BỘ NÃO AI OCR - ĐỘI HÌNH SIÊU XỊN ĐÃ LỌC BỎ LỖI
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -118,14 +118,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
         }
 
-        // 🌟 ĐỘI HÌNH TỨ TRỤ THEO Ý SẾP (THÍCH SỐ 4) 🌟
-        const modelsToTry = [
-            // ĐỘI HÌNH AI CHUẨN XỊN (Đã lọc sạch các con bị 404 và cấm cửa)
+        // ĐỘI HÌNH AI CHUẨN XỊN (Đã kiểm tra cú pháp chuẩn 100%)
         const modelsToTry = [
             "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã tốc độ, thông minh nhất
             "gemini-1.5-flash",       // 🥈 TOP 2: Lốp dự phòng siêu bền đời 1.5
             "gemini-3.1-flash-lite"   // 🥉 TOP 3: Chốt chặn cuối cùng
-        ];
         ];
         
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
@@ -166,7 +163,6 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     if (!isRecitationMode) {
                         currentInstruction = `\n2. LỆNH QUÉT ĐỀ: Trích xuất 100% văn bản gốc. Nếu vướng bản quyền, bạn được phép paraphrase tối đa 5% từ vựng trong lời dẫn, TUYỆT ĐỐI GIỮ NGUYÊN số liệu, hình ảnh và 4 đáp án.\n`;
                     } else {
-                        // 💊 THUỐC ĐẶC TRỊ "ĐỨT HƠI": Lách bản quyền nhưng tiết kiệm sức để sinh đủ chuỗi JSON
                         currentInstruction = `\n2. LỆNH CHỐNG RECITATION SIÊU NHẸ: Để lách bản quyền mà không bị đuối sức, bạn TUYỆT ĐỐI KHÔNG paraphrase toàn bộ câu. CHỈ CẦN thêm cụm từ "Theo bài ra," hoặc đổi 1-2 từ ngữ ở ngay đầu mỗi câu hỏi. Giữ nguyên 95% văn bản gốc, số liệu và đáp án để tiết kiệm thời gian sinh JSON!\n`;
                     }
                     if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
@@ -210,7 +206,6 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     let rawText = result.response.text();
                     rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-                    // MÁY CẮT LỌC JSON: Tự động vứt bỏ chữ rác, vá lỗi
                     let startIndex = rawText.indexOf('{');
                     let endIndex = rawText.lastIndexOf('}');
                     
@@ -237,7 +232,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                             console.log(`⚠️ Bị chặn bản quyền! Đang bật khiên "Xào Bài Nhẹ" để lách luật...`);
                             await sleep(3000); 
                             isRecitationMode = true; 
-                            i--; // Gọi lại chính Key này với lệnh mới
+                            i--; 
                             continue; 
                         }
                     } else if (error.message.includes('401') || error.message.includes('404')) {
