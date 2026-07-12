@@ -44,7 +44,7 @@ const ScoreSchema = new mongoose.Schema({
 const Score = mongoose.model('Score', ScoreSchema);
 
 // ==========================================
-// 2. CÁC API QUẢN LÝ (USERS, EXAMS, SCORES)
+// 2. CÁC API QUẢN LÝ
 // ==========================================
 app.get('/', (req, res) => { res.status(200).send('✅ Máy chủ Backend đang hoạt động!'); });
 app.post('/api/dang-ky', async (req, res) => { try { await new User({ ...req.body, role: 'student', createdAt: Date.now() }).save(); res.status(201).json({ message: "Đăng ký thành công" }); } catch (error) { res.status(400).json({ message: "Tên đăng nhập đã tồn tại hoặc lỗi dữ liệu" }); } });
@@ -91,7 +91,7 @@ function getSmartPrompt(subject, customPrompt) {
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - HỖ TRỢ NHIỀU ẢNH & ĐỘ PHÂN GIẢI CAO
+// 4. BỘ NÃO AI OCR - CÒI BÁO ĐỘNG LỖI
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -175,6 +175,9 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     console.log(`✅ THÀNH CÔNG! Đã quét xong ${finalResult.exam.length} câu!`);
 
                 } catch (error) {
+                    // ĐÃ KHÔI PHỤC CÒI BÁO LỖI Ở ĐÂY SẾP NHÉ!
+                    console.error(`❌ [Key ${i+1}] BÁO LỖI:`, error.message);
+                    
                     if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
                         if (requestMode === 'scan') {
                             await sleep(3000);
