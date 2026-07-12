@@ -1187,7 +1187,8 @@ LƯU Ý CẤU TRÚC:
                 let subOptArr = (q.subOptions && q.subOptions.length > 0) ? q.subOptions : ["Mệnh đề 1", "Mệnh đề 2", "Mệnh đề 3", "Mệnh đề 4"];
                 subOptArr.forEach((s,j) => {
                     let cleanSubOpt = cleanOptionText(s || ""); 
-                    let correctAns = (q.correctAnswers && q.correctAnswers[j]) ? q.correctAnswers[j] : 'D';
+                    let rawAns = (q.correctAnswers && q.correctAnswers[j]) ? String(q.correctAnswers[j]).toUpperCase().trim() : 'D';
+                    let correctAns = (rawAns === 'S' || rawAns.includes('SAI') || rawAns === 'FALSE') ? 'S' : 'D';
                     html += `<div style="display:flex;gap:10px;margin-bottom:8px; align-items:center;"><b>Ý ${String.fromCharCode(97+j)}:</b> <input class="edit-in" id="es-${i}-${j}" value="${cleanSubOpt}" style="flex:1; padding:8px;"> <select id="ekd-${i}-${j}" class="edit-in" style="width:100px; padding:8px;"><option value="D" ${correctAns==='D'?'selected':''}>ĐÚNG</option><option value="S" ${correctAns==='S'?'selected':''}>SAI</option></select></div>`;
                 }); 
                 html += `</div>`; 
