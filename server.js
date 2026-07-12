@@ -205,7 +205,7 @@ function getSmartPrompt(subject, customPrompt) {
     
     if (subj.includes('toán')) {
         return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại lời văn câu dẫn. TUYỆT ĐỐI GIỮ NGUYÊN 100% mọi con số, biểu thức, tọa độ, ma trận, hình học và đáp án.`;
-    } else if (subj.includes('lý') || subj.includes('vật lí')) {
+    } else if (subj.includes('lý') || subj.includes('vật lí') || subj.includes('công nghệ')) {
         return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC diễn đạt lại cách mô tả hiện tượng. TUYỆT ĐỐI GIỮ NGUYÊN 100% các đơn vị, thông số, công thức và đáp án đúng.`;
     } else if (subj.includes('hóa')) {
         return base + `[CHỈ THỊ TỐI MẬT]: BẮT BUỘC viết lại câu hỏi lý thuyết. TUYỆT ĐỐI GIỮ NGUYÊN 100% công thức hóa học, hệ số cân bằng, số liệu.`;
@@ -230,11 +230,12 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
         }
 
+        // ĐỘI HÌNH AI VIP CỦA SẾP: TỪ XỊN NHẤT ĐẾN DỎM NHẤT
         const modelsToTry = [
-            "gemini-1.5-pro", 
-            "gemini-3.5-flash", 
-            "gemini-1.5-flash", 
-            "gemini-3.1-flash-lite"
+            "gemini-3.1-pro",         // Boss 1: Toán học, Lập trình và Tư duy sâu
+            "gemini-3.5-flash",       // Boss 2: Trợ lý toàn diện, siêu tốc độ
+            "gemini-2.0-pro",         // Lốp dự phòng 1: Đời Gen 2
+            "gemini-1.5-pro"          // Lốp dự phòng 2: Đời Gen 1 vét đáy
         ];
         
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
@@ -280,7 +281,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 // Xử lý câu lệnh chỉ thị dựa theo Mode
                 let currentInstruction = "";
                 if (requestMode === 'scan') {
-                    currentInstruction = `\n2. LỆNH TỐI CAO CỦA QUÉT ĐỀ: BẮT BUỘC trích xuất CHÍNH XÁC 100% nguyên văn bản gốc. TUYỆT ĐỐI KHÔNG ĐƯỢC tóm tắt hay cắt xén. Có bao nhiêu câu phải quét đủ bấy nhiêu.\n`;
+                    if (!isRecitationMode) {
+                        currentInstruction = `\n2. LỆNH QUÉT ĐỀ: Trích xuất 100% văn bản. ĐỂ TRÁNH BẢN QUYỀN, bạn được phép paraphrase tối đa 5% từ vựng trong lời dẫn, TUYỆT ĐỐI GIỮ NGUYÊN số liệu, hình ảnh và 4 đáp án.\n`;
+                    } else {
+                        currentInstruction = `\n2. LỆNH CHỐNG RECITATION: Tài liệu này có bản quyền gắt gao. BẮT BUỘC phải xào bài (paraphrase) toàn bộ lời dẫn của các câu hỏi bằng cấu trúc câu khác. TUYỆT ĐỐI GIỮ NGUYÊN 4 ĐÁP ÁN VÀ SỐ LIỆU.\n`;
+                    }
                     if (customPrompt) {
                         currentInstruction += `Lệnh từ GV: ${customPrompt}\n`;
                     }
@@ -356,23 +361,23 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     }
 
                     isSuccess = true;
-                    console.log(`✅ THÀNH CÔNG! Đã quét xong ${finalResult.exam.length} câu!`);
+                    console.log(`✅ THÀNH CÔNG VỚI [${currentModelName}]! Đã quét xong ${finalResult.exam.length} câu!`);
 
                 } catch (error) {
                     console.error(`❌ [Key ${i+1}] BÁO LỖI:`, error.message);
                     
-                    // Cơ chế xử lý lỗi và Quay xe
+                    // NẾU BỊ CHẶN BẢN QUYỀN (RECITATION) -> BẬT KHIÊN XÀO BÀI ĐỂ VƯỢT NGỤC
                     if (error.message && (error.message.includes('RECITATION') || error.message.includes('SILENT_BLOCK'))) {
-                        if (requestMode === 'scan') { 
+                        if (!isRecitationMode) { 
+                            console.log(`⚠️ Bị chặn bản quyền! Quay xe bật khiên Xào Bài...`);
                             await sleep(3000); 
-                        } else { 
-                            if (!isRecitationMode) { 
-                                await sleep(3000); 
-                                isRecitationMode = true; 
-                                i--; 
-                                continue; 
-                            } 
+                            isRecitationMode = true; 
+                            i--; // Thử lại Key này với chế độ xào bài
+                            continue; 
                         }
+                    } else if (error.message.includes('401') || error.message.includes('404')) {
+                        // Key chết hoặc Model không tồn tại thì không thèm chờ, đổi Key ngay
+                        console.log(`⚠️ Lỗi cấu hình/Key chết hoặc Model không tồn tại, đổi sang lựa chọn tiếp theo...`);
                     } else {
                         // Lỗi JSON_PARSE_ERROR hoặc nghẽn mạng sẽ rơi vào đây
                         await sleep(3000); 
