@@ -166,7 +166,7 @@
 </div>
 
 <div class="app-header">
-    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 3.0 (FULL TÍNH NĂNG)</h1>
+    <h1><i class="fa-solid fa-layer-group"></i> KHẢO THÍ SỐ AI 3.0 (TỰ CHỮA LỖI AI)</h1>
     <div id="uBadge" class="user-badge"><i class="fa-regular fa-circle-user"></i> Khách</div>
 </div>
 
@@ -322,7 +322,6 @@
             <div id="tReview" class="hidden" style="border:1px solid var(--primary); border-radius:8px; padding:24px; margin-top:24px;">
                 <h3 style="color:var(--primary); margin-top:0;"><i class="fa-solid fa-list-check"></i> THẨM ĐỊNH VÀ PHÊ DUYỆT</h3>
 
-                <!-- KHUNG BÁO CÁO HÌNH ẢNH DÀNH CHO GIÁO VIÊN -->
                 <div id="teacher-image-alert-box" style="display: none; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 2px dashed #f43f5e; background: #fff1f2;"></div>
 
                 <div id="qDrafts"></div>
@@ -927,14 +926,23 @@
 
     const reqAI = async () => { 
         if(!$('tClass').value||!$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
-        if (!currentFileBase64 && !currentExtractedText) return toast("Sếp ơi, nạp tài liệu hoặc Ảnh vào hộp trước đã!", "warn");
+        if (!currentFileBase64 && !currentExtractedText && currentMode !== 'generate') return toast("Sếp ơi, nạp tài liệu hoặc Ảnh vào hộp trước đã!", "warn");
 
         toast("Đang nén và phóng dữ liệu qua Cloud AI...", "loading"); 
 
         let finalCustomPrompt = $('tCustomPrompt').value;
 
-        if(currentMode === 'scan') {
-            finalCustomPrompt = "Trích xuất đề thi từ file. BẮT BUỘC THỰC HIỆN ĐỂ TRÁNH LỖI BẢN QUYỀN (RECITATION): Bạn KHÔNG ĐƯỢC sao chép y nguyên 100% văn bản. Hãy viết lại (paraphrase), thay đổi cấu trúc câu hoặc từ đồng nghĩa của tất cả các câu hỏi và đáp án ít nhất 15% so với bản gốc, đảm bảo giữ nguyên ý nghĩa và đáp án đúng. Tóm tắt nội dung làm sơ đồ tư duy. " + finalCustomPrompt;
+        // BỌC THÉP ÉP BUỘC AI
+        if (currentMode === 'generate') {
+            finalCustomPrompt = `[CHỈ THỊ TỐI CAO - BẮT BUỘC]: Hãy sáng tác ĐÚNG 15 CÂU HỎI. Cấu trúc CHÍNH XÁC:
+- TỪ CÂU 1 ĐẾN CÂU 12 (12 câu): Thuộc loại "nhiều lựa chọn" (4 đáp án A, B, C, D).
+- TỪ CÂU 13 ĐẾN CÂU 15 (3 câu): Thuộc loại "đúng sai" (Mỗi câu BẮT BUỘC phải chia 4 ý a,b,c,d vào mảng subOptions, đáp án D/S vào mảng correctAnswers).
+Không được làm thiếu số lượng. ` + finalCustomPrompt;
+        } else if(currentMode === 'scan') {
+            finalCustomPrompt = `[CHỈ THỊ TỐI CAO]: Trích xuất đề thi. ĐỂ TRÁNH BẢN QUYỀN: Hãy diễn đạt lại (paraphrase) câu hỏi 15%. 
+LƯU Ý CẤU TRÚC:
+- Nếu là câu Đúng/Sai (có 4 ý a,b,c,d): BẮT BUỘC tách 4 ý đó ra khỏi phần lời dẫn, đưa vào mảng "subOptions". Tuyệt đối không gộp chung vào "questionText". type là "đúng sai".
+- TUYỆT ĐỐI không được tạo câu "nhiều lựa chọn" mà đáp án chỉ có A. Đúng, B. Sai. ` + finalCustomPrompt;
         }
 
         let payload = {
@@ -955,7 +963,76 @@
             const resData = await res.json();
 
             if(res.ok) { 
-                drafts = resData.data; 
+                
+                // THUẬT TOÁN AUTO-CORRECTION: CHÉM CÂU HỎI LỖI
+                let rawData = resData.data;
+                if(rawData && rawData.exam) {
+                    rawData.exam.forEach(q => {
+                        let qTypeStr = String(q.type || "").trim().toLowerCase();
+                        let qTextLC = String(q.questionText || "").toLowerCase();
+                        
+                        let isWrongType = false;
+                        if (qTypeStr === 'nhiều lựa chọn') {
+                            if (qTextLC.includes('đúng sai') || qTextLC.includes('đúng hay sai')) isWrongType = true;
+                            if (q.options && q.options.some(o => o.toLowerCase() === 'đúng' || o.toLowerCase() === 'sai' || o.toLowerCase() === 'a. đúng' || o.toLowerCase() === 'b. sai')) isWrongType = true;
+                        }
+
+                        if (isWrongType || qTypeStr === 'đúng sai') {
+                            q.type = 'đúng sai';
+                            let text = q.questionText || "";
+                            let subOpts = q.subOptions || [];
+                            
+                            // Tự động chém mảng nếu AI gộp chung a, b, c, d
+                            if (subOpts.length === 0 || subOpts[0] === "") {
+                                let regexA = /[aA]\s*[\.\)]\s*/;
+                                let regexB = /[bB]\s*[\.\)]\s*/;
+                                let regexC = /[cC]\s*[\.\)]\s*/;
+                                let regexD = /[dD]\s*[\.\)]\s*/;
+                                
+                                let splitA = text.split(regexA);
+                                if(splitA.length > 1) {
+                                    q.questionText = splitA[0].trim();
+                                    let rest = splitA.slice(1).join("a.");
+                                    let splitB = rest.split(regexB);
+                                    if(splitB.length > 1) {
+                                        subOpts[0] = splitB[0].trim();
+                                        let rest2 = splitB.slice(1).join("b.");
+                                        let splitC = rest2.split(regexC);
+                                        if(splitC.length > 1) {
+                                            subOpts[1] = splitC[0].trim();
+                                            let rest3 = splitC.slice(1).join("c.");
+                                            let splitD = rest3.split(regexD);
+                                            if(splitD.length > 1) {
+                                                subOpts[2] = splitD[0].trim();
+                                                subOpts[3] = splitD.slice(1).join("d.").trim();
+                                            } else {
+                                                subOpts[2] = splitC.slice(1).join("c.").trim();
+                                            }
+                                        } else {
+                                            subOpts[1] = splitB.slice(1).join("b.").trim();
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            while(subOpts.length < 4) subOpts.push("Mệnh đề tự điền " + (subOpts.length+1));
+                            q.subOptions = subOpts.slice(0, 4);
+                            
+                            if (!q.correctAnswers || q.correctAnswers.length < 4) {
+                                q.correctAnswers = ["D","S","D","S"];
+                            }
+                        } else {
+                            q.type = 'nhiều lựa chọn';
+                            if (!q.options || q.options.length < 4) {
+                                q.options = q.options || [];
+                                while(q.options.length < 4) q.options.push("Đáp án tự điền");
+                            }
+                            if(!q.correctAnswer) q.correctAnswer = "A";
+                        }
+                    });
+                }
+                
+                drafts = rawData; 
                 editingExamId = null; 
                 $('tInput').style.display='none'; 
                 $('tReview').style.display='block'; 
@@ -1029,7 +1106,6 @@
     const renderDraft = () => { 
         $('qDrafts').innerHTML=""; 
         
-        // BẬT KHUNG CẢNH BÁO HÌNH ẢNH NẾU AI PHÁT HIỆN
         const alertBox = $('teacher-image-alert-box');
         if (alertBox) {
             if (drafts && drafts.teacher_image_notes && drafts.teacher_image_notes.length > 0) {
@@ -1116,7 +1192,7 @@
                 }); 
                 html += `</div>`; 
             } 
-            html += `</div>`; // ĐÓNG THẺ DIV CHÍNH CỦA QUESTION CARD 
+            html += `</div>`; 
         }); 
         $('qDrafts').innerHTML = html; 
 
