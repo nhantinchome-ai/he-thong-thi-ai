@@ -121,10 +121,8 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         // ĐỘI HÌNH AI ĐÔNG VUI VÀ BẤT TỬ THEO LỆNH CỦA SẾP
         const modelsToTry = [
             "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã siêu tốc (Có thể nghẽn mạng lúc cao điểm)
-            "gemini-flash",           // 🥈 TOP 2: Mã auto-route, tự tìm con flash ngon nhất đang rảnh
             "gemini-3.1-flash-lite",  // 🥉 TOP 3: Lốp dự phòng hạng nhẹ, luôn luôn sống
             "gemini-3.0-flash",       // 🛡️ TOP 4: Đời 3.0 nếu các con trên ngỏm
-            "gemini-pro",             // 🐢 TOP 5: Mã auto-route tự tìm con Pro xịn nhất
             "gemini-1.5-flash-8b"     // 🐜 TOP 6: Con kiến càng chốt chặn cuối cùng
         ];
         
