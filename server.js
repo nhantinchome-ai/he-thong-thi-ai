@@ -107,7 +107,7 @@ function getSmartPrompt(subject, customPrompt) {
 }
 
 // ==========================================
-// 4. BỘ NÃO AI OCR - ĐỘI HÌNH SIÊU CHIẾN MÃ + BÙA XÀO BÀI SÂU
+// 4. BỘ NÃO AI OCR - ĐỘI HÌNH BẤT TỬ BẢO KÊ SERVER
 // ==========================================
 app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
     try {
@@ -118,13 +118,14 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
             return res.status(500).json({ message: "Server chưa cấu hình API Key!" });
         }
 
-        // ĐỘI HÌNH AI ĐÃ SỬA SẠCH LỖI THIẾU DẤU PHẨY VÀ TỐI ƯU HIỆU NĂNG
+        // ĐỘI HÌNH AI ĐÔNG VUI VÀ BẤT TỬ THEO LỆNH CỦA SẾP
         const modelsToTry = [
-            "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã siêu tốc
-            "gemini-3.1-pro-preview", // 🥈 TOP 2: Nếu tài khoản PRO xịn
-            "gemini-2.5-pro",         // 🥉 TOP 3: Trâu cày Gen 2.5
-            "gemini-2.5-flash",       // 🛡️ TOP 4: Lốp dự phòng siêu bền
-            "gemini-1.5-flash"        // 🐢 TOP 5: Chốt chặn cuối cùng
+            "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã siêu tốc (Có thể nghẽn mạng lúc cao điểm)
+            "gemini-flash",           // 🥈 TOP 2: Mã auto-route, tự tìm con flash ngon nhất đang rảnh
+            "gemini-3.1-flash-lite",  // 🥉 TOP 3: Lốp dự phòng hạng nhẹ, luôn luôn sống
+            "gemini-3.0-flash",       // 🛡️ TOP 4: Đời 3.0 nếu các con trên ngỏm
+            "gemini-pro",             // 🐢 TOP 5: Mã auto-route tự tìm con Pro xịn nhất
+            "gemini-1.5-flash-8b"     // 🐜 TOP 6: Con kiến càng chốt chặn cuối cùng
         ];
         
         const teachingSubject = req.body.teachingSubject || "Mặc định"; 
@@ -260,7 +261,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         if (isSuccess) {
             return res.status(200).json({ data: finalResult });
         } else {
-            return res.status(503).json({ message: "Hệ thống đang quá tải tài nguyên xử lý. Sếp vui lòng thử lại sau giây lát!" });
+            return res.status(503).json({ message: "Máy chủ Google đang nghẽn mạng! Sếp vui lòng thử lại sau 1-2 phút nhé!" });
         }
 
     } catch (error) {
