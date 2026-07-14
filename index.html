@@ -1472,8 +1472,20 @@
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     };
 
-    const cleanQuestionText = (text) => {
-        return text ? text.replace(/^(Câu|Bài|Question)\s*\d+[\.\:\-]?\s*/i, '').trim() : "";
+    // CỖ MÁY CHÉM CHỮ THÔNG MINH: Biết ai đang xem để giấu bài
+    const cleanQuestionText = (text, isStudent = false) => {
+        if (!text) return "";
+        
+        // 1. Luôn chém chữ "Câu 1:", "Bài 2:" ở đầu để hệ thống tự đánh số lại
+        let cleaned = text.replace(/^(Câu|Bài|Question)\s*\d+[\.\:\-]?\s*/i, '').trim();
+        
+        // 2. NẾU LÀ HỌC SINH -> Chém bay luôn các nhãn [Trích xuất], [Sáng tác]
+        if (isStudent) {
+            cleaned = cleaned.replace(/^(\[.*?\]\s*)+/, '').trim();
+            cleaned = cleaned.replace(/^(\(.*?\)\s*)+/, '').trim();
+        }
+        
+        return cleaned;
     };
     
     const cleanOptionText = (text) => {
@@ -2018,7 +2030,9 @@
             let encodedCorrect = q.correctAnswer; 
             h += `<div class="game-q-card" id="sc-${i}" data-type="${q.type}">`; 
             
-            let cleanQTextHS = cleanQuestionText(q.questionText); 
+            // KÍCH HOẠT KHIÊN TÀNG HÌNH Ở ĐÂY CHO HỌC SINH THẤY ĐỀ SẠCH BONG
+            let cleanQTextHS = cleanQuestionText(q.questionText, true); 
+            
             let qTypeStr = String(q.type || "").trim().toLowerCase(); 
             let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai'); 
             
