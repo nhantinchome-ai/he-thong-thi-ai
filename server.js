@@ -122,7 +122,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
         const modelsToTry = [
             "gemini-3.5-flash",       // 👑 TOP 1: Chiến mã siêu tốc (Có thể nghẽn mạng lúc cao điểm)
             "gemini-3.1-flash-lite",  // 🥉 TOP 3: Lốp dự phòng hạng nhẹ, luôn luôn sống
-            "gemini-3.0-flash",       // 🛡️ TOP 4: Đời 3.0 nếu các con trên ngỏm
+            "gemini-3-flash",       // 🛡️ TOP 4: Đời 3.0 nếu các con trên ngỏm
             "gemini-1.5-flash-8b"     // 🐜 TOP 6: Con kiến càng chốt chặn cuối cùng
         ];
         
