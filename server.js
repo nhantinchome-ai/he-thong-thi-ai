@@ -180,21 +180,34 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     }
                 }
 
+                // CẬP NHẬT LỚP PHÒNG NGỰ Ở PROMPT CHO MÔN TOÁN VÀ MẮT THẦN
                 let promptText = `Bạn là chuyên gia thẩm định và trích xuất dữ liệu giáo dục. Hãy đọc toàn bộ tài liệu/ảnh đính kèm và thực hiện ĐẦY ĐỦ 4 NHIỆM VỤ sau:
                 1. Vẽ Sơ đồ tư duy (Mindmap): Tóm tắt chi tiết, logic toàn bộ cấu trúc và kiến thức trọng tâm của tài liệu đính kèm bằng định dạng Markdown.
                 ${currentInstruction}
                 3. Trích xuất ĐẦY ĐỦ 100% câu hỏi (QUY TẮC BẢO TOÀN): Tài liệu có bao nhiêu câu hỏi, phải bóc tách đầy đủ bấy nhiêu câu, tuyệt đối không được bỏ sót hay tóm tắt.
                    - Câu hỏi trắc nghiệm 4 lựa chọn -> phân loại type là "nhiều lựa chọn".
                    - Câu hỏi trắc nghiệm Đúng/Sai -> phân loại type là "đúng sai", BẮT BUỘC phải bóc tách rành mạch 4 ý nhỏ a, b, c, d vào mảng "subOptions" và đáp án Đúng/Sai của từng ý vào mảng "correctAnswers".
-                4. Soi hình ảnh và sơ đồ (Mắt thần): Kiểm tra từng câu hỏi vừa trích xuất với tài liệu gốc. Bất cứ câu nào có hình vẽ, sơ đồ mạch điện, bảng biểu hoặc đồ thị, BẮT BUỘC phải viết ghi chú chi tiết vào mảng "teacher_image_notes".
+                4. Soi hình ảnh và sơ đồ (Mắt thần): CHỈ QUÉT HÌNH ẢNH CỦA CÁC CÂU HỎI BÀI TẬP. Bất cứ câu bài tập nào gốc có chứa hình vẽ, đồ thị, bảng biến thiên, BẮT BUỘC ghi chú chi tiết vào mảng "teacher_image_notes".
+                   - TUYỆT ĐỐI BỎ QUA toàn bộ hình ảnh minh họa nằm ở phần lý thuyết chung. Nếu không có câu bài tập nào chứa hình, hãy để mảng này rỗng [].
+                   - Tại trường "cau_hien_tai", BẮT BUỘC phải ghi chính xác tên câu hỏi sẽ hiển thị (VD: "Câu 1", "Câu 2"). TUYỆT ĐỐI KHÔNG ĐƯỢC GHI "Không có".
                 
                 BẮT BUỘC TRẢ VỀ DUY NHẤT CẤU TRÚC JSON CHUẨN SAU ĐÂY:
                 {
                     "mindmap": "# Tiêu đề chính\n## Nhánh 1\n- Ý chi tiết 1",
                     "teacher_image_notes": [ { "cau_hien_tai": "Câu 5", "cau_goc": "Câu 5", "mo_ta_hinh_anh_can_chen": "Sơ đồ mạch điện R1 R2" } ],
                     "exam": [
-                        { "type": "nhiều lựa chọn", "questionText": "Câu 1: Nội dung câu hỏi đã được viết lại?", "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"], "correctAnswer": "A" },
-                        { "type": "đúng sai", "questionText": "Câu 2: Nội dung câu dẫn đã được viết lại?", "subOptions": ["Nội dung ý a", "Nội dung ý b", "Nội dung ý c", "Nội dung ý d"], "correctAnswers": ["D", "S", "D", "S"] }
+                        { 
+                            "type": "nhiều lựa chọn", 
+                            "questionText": "Câu 1: Nội dung câu hỏi đã được viết lại?", 
+                            "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"], 
+                            "correctAnswer": "A" // <-- LƯU Ý TỐI MẬT: CHỈ ĐIỀN ĐÚNG 1 CHỮ CÁI IN HOA (A, B, C, D). TUYỆT ĐỐI KHÔNG ĐIỀN CÔNG THỨC TOÁN HAY NỘI DUNG ĐÁP ÁN VÀO TRƯỜNG NÀY!
+                        },
+                        { 
+                            "type": "đúng sai", 
+                            "questionText": "Câu 2: Nội dung câu dẫn đã được viết lại?", 
+                            "subOptions": ["Nội dung ý a", "Nội dung ý b", "Nội dung ý c", "Nội dung ý d"], 
+                            "correctAnswers": ["D", "S", "D", "S"] 
+                        }
                     ]
                 }
                 Nội dung Text đính kèm: ${documentText || 'Dùng ảnh đính kèm.'}`;
@@ -222,6 +235,38 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
 
                     try {
                         finalResult = JSON.parse(cleanJsonString);
+
+                        // LỚP PHÒNG NGỰ KÉP THÉP CHO MÔN TOÁN: Chữa bệnh "Ngáo Toán Học" của AI
+                        if (finalResult && finalResult.exam) {
+                            finalResult.exam.forEach(q => {
+                                if (q.type === 'nhiều lựa chọn' && q.correctAnswer && q.correctAnswer.length > 2) {
+                                    // Bị lú rồi: Nhét nguyên cụm công thức vào Key
+                                    // Đi lùng sục xem cụm công thức này khớp với option nào (A=0, B=1, C=2, D=3)
+                                    let matchedIndex = (q.options || []).findIndex(opt => opt.trim() === q.correctAnswer.trim());
+                                    
+                                    if (matchedIndex !== -1) {
+                                        q.correctAnswer = String.fromCharCode(65 + matchedIndex); // Ép về lại A, B, C, D chuẩn
+                                    } else {
+                                        // Nếu mò không ra (AI tự chế đáp án), mặc định gán chữ A để web không bị sập, GV tự sửa sau
+                                        let firstChar = q.correctAnswer.trim().charAt(0).toUpperCase();
+                                        if (['A','B','C','D'].includes(firstChar)) {
+                                            q.correctAnswer = firstChar;
+                                        } else {
+                                            q.correctAnswer = "A"; 
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        // LỌC RÁC CHO MẮT THẦN
+                        if (finalResult && finalResult.teacher_image_notes) {
+                            finalResult.teacher_image_notes = finalResult.teacher_image_notes.filter(note => {
+                                let c = note.cau_hien_tai || note.cau || note.cau_hoi || "";
+                                return typeof c === 'string' && c.trim() !== "" && !c.toLowerCase().includes("không có");
+                            });
+                        }
+
                     } catch (parseError) {
                         throw new Error("JSON_PARSE_ERROR");
                     }
