@@ -16,6 +16,15 @@
     <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
     <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
 
+    <!-- Thư viện MathJax để render công thức Toán, Lý, Hóa -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
     <style>
         :root { 
             --primary: #4f46e5; 
@@ -134,13 +143,6 @@
             border-color: var(--primary); 
             background: white; 
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); 
-        }
-
-        #tClass { 
-            display: block !important; 
-            visibility: visible !important; 
-            opacity: 1 !important; 
-            height: auto !important; 
         }
 
         .pwd-box { position: relative; } 
@@ -509,8 +511,11 @@
 
                 <div style="display:flex; gap:15px;">
                     <div class="form-group" style="flex:1;">
-                        <label>Lớp giao bài:</label>
-                        <select id="tClass"></select>
+                        <label>Lớp giao bài (Chọn nhiều lớp):</label>
+                        <!-- Thay Select bằng Grid Checkbox -->
+                        <div id="tClassGrid" style="display:flex; flex-wrap:wrap; gap:8px; padding:10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; max-height: 80px; overflow-y: auto;">
+                            <span style="color:var(--text-muted); font-size:13px; font-style:italic;">Đang tải danh sách lớp...</span>
+                        </div>
                     </div>
                     <div class="form-group" style="flex:1.5;">
                         <label>Phân loại chuyên mục:</label>
@@ -811,8 +816,9 @@
     // XỬ LÝ NÚT BẤM RA ĐỀ
     window.handleModeSubmit = () => {
         if (currentMode === 'manual') {
-            if (!$('tClass').value || !$('tWeek').value) {
-                return toast("Thiếu thông tin bài kiểm tra!", "warn"); 
+            const selectedClasses = Array.from(document.querySelectorAll('.assign-cls-cb:checked')).map(cb => cb.value).join(', ');
+            if (!selectedClasses || !$('tWeek').value) {
+                return toast("Thiếu thông tin bài kiểm tra hoặc chưa chọn lớp!", "warn"); 
             }
             drafts = { 
                 mindmap: "# Nhập Tên Chủ Đề Ở Đây\n- Ý chính 1\n  - Nhánh nhỏ 1\n- Ý chính 2", 
@@ -1237,8 +1243,8 @@
     const setupTea = () => { 
         $('tLockSubj').innerText = session.teachingSubject || "N/A"; 
         
-        const selectElement = $('tClass'); 
-        selectElement.innerHTML = '<option value="">-- Chọn --</option>'; 
+        const classGrid = $('tClassGrid'); 
+        classGrid.innerHTML = ''; 
         
         let rawClasses = session.teachingClasses;
         if (rawClasses) { 
@@ -1246,10 +1252,13 @@
             tClasses.forEach(c => { 
                 let cleanC = c.trim(); 
                 if (cleanC) {
-                    selectElement.innerHTML += `<option value="${cleanC}">${cleanC}</option>`; 
+                    classGrid.innerHTML += `<label style="cursor:pointer; display:flex; align-items:center; gap:5px; background:white; padding:4px 8px; border-radius:4px; border:1px solid var(--border); font-size:13px; font-weight:600;"><input type="checkbox" value="${cleanC}" class="assign-cls-cb"> ${cleanC}</label>`; 
                 }
             }); 
-        } 
+            if(classGrid.innerHTML === '') classGrid.innerHTML = '<span style="color:#ef4444; font-size:13px;">Chưa được phân công dạy lớp nào!</span>';
+        } else {
+            classGrid.innerHTML = '<span style="color:#ef4444; font-size:13px;">Chưa được phân công dạy lớp nào!</span>';
+        }
         switchTeaTab('rade'); 
     };
 
@@ -1314,7 +1323,12 @@
         const ex = examsDB.find(e => e.id === id);
         if(!ex) return;
         drafts = { mindmap: ex.mindmap || "", exam: ex.questions }; 
-        $('tClass').value = ex.targetClass;
+        
+        const targetClasses = ex.targetClass.split(',').map(c => c.trim());
+        document.querySelectorAll('.assign-cls-cb').forEach(cb => {
+            cb.checked = targetClasses.includes(cb.value);
+        });
+        
         $('tCategory').value = ex.category || ''; 
         $('tWeek').value = ex.topic;
         $('tTime').value = ex.duration || 45; 
@@ -1342,7 +1356,8 @@
 
     // GỌI AI ĐỂ QUÉT / SÁNG TÁC ĐỀ
     const reqAI = async () => { 
-        if (!$('tClass').value || !$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
+        const selectedClasses = Array.from(document.querySelectorAll('.assign-cls-cb:checked')).map(cb => cb.value).join(', ');
+        if (!selectedClasses || !$('tWeek').value) return toast("Thiếu thông tin khung kiểm tra bài!", "warn"); 
         
         if (currentFileBase64Array.length === 0 && !currentFileBase64 && !currentExtractedText && currentMode !== 'generate') {
             return toast("Sếp ơi, nạp tài liệu hoặc Ảnh vào hộp trước đã!", "warn");
@@ -1603,6 +1618,13 @@
         
         $('qDrafts').innerHTML = html; 
         setTimeout(() => renderMM(mindmapText, 'teacher-mm'), 100);
+        
+        // Kích hoạt render công thức Toán/Lý/Hóa
+        setTimeout(() => {
+            if (window.MathJax) {
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }, 500);
     };
 
     window.removeQuestion = (idx) => { 
@@ -1667,8 +1689,11 @@
         const createTime = Date.now(); 
         toast("Đang tải dữ liệu lên máy chủ...", "loading");
         
+        const selectedClasses = Array.from(document.querySelectorAll('.assign-cls-cb:checked')).map(cb => cb.value).join(', ');
+        if (!selectedClasses) return toast("Sếp ơi, chưa tick chọn lớp nào để giao bài kìa!", "warn");
+
         let payload = { 
-            targetClass: $('tClass').value, 
+            targetClass: selectedClasses, 
             category: $('tCategory').value || 'Không phân loại', 
             subject: session.teachingSubject, 
             topic: $('tWeek').value, 
@@ -1740,6 +1765,13 @@
         
         $('rDetails').innerHTML = h; 
         $('reviewModal').style.display = 'flex';
+        
+        // Kích hoạt render công thức cho Modal Xem chi tiết
+        setTimeout(() => {
+            if (window.MathJax) {
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }, 300);
     };
 
     window.deleteScore = async (scoreId) => { 
@@ -1862,8 +1894,8 @@
             if (!e.targetClass) return false; 
             const targetGrade = e.targetClass.substring(0, 2); 
             if (myGrade === '10') return targetGrade === '10'; 
-            else if (myGrade === '11') return targetGrade === '10' || e.targetClass === session.studentClass; 
-            else if (myGrade === '12') return targetGrade === '10' || targetGrade === '11' || e.targetClass === session.studentClass; 
+            else if (myGrade === '11') return targetGrade === '10' || e.targetClass.includes(session.studentClass); 
+            else if (myGrade === '12') return targetGrade === '10' || targetGrade === '11' || e.targetClass.includes(session.studentClass); 
             return false; 
         }); 
         
@@ -1885,8 +1917,8 @@
             if (!e.targetClass) return false; 
             const targetGrade = e.targetClass.substring(0, 2); 
             if (myGrade === '10') return targetGrade === '10'; 
-            else if (myGrade === '11') return targetGrade === '10' || e.targetClass === session.studentClass; 
-            else if (myGrade === '12') return targetGrade === '10' || targetGrade === '11' || e.targetClass === session.studentClass; 
+            else if (myGrade === '11') return targetGrade === '10' || e.targetClass.includes(session.studentClass); 
+            else if (myGrade === '12') return targetGrade === '10' || targetGrade === '11' || e.targetClass.includes(session.studentClass); 
             return false; 
         }); 
         
@@ -2083,6 +2115,13 @@
         window.scrollTo({top:0, behavior:'smooth'}); 
         clearInterval(timerInterval); 
         startTimer(durationSecs, $('examTimerBox'), id); 
+        
+        // Kích hoạt render công thức Toán/Lý/Hóa cho Học Sinh
+        setTimeout(() => {
+            if (window.MathJax) {
+                MathJax.typesetPromise().catch((err) => console.log(err.message));
+            }
+        }, 500);
     };
 
     const submitExam = async (id, isAuto = false) => { 
