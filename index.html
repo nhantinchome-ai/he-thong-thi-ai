@@ -569,6 +569,7 @@
         }
     };
     
+    // TÍNH NĂNG MỚI: DÁN ẢNH BẰNG CTRL + V
     window.handlePasteImage = (e, idx) => {
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let index in items) {
@@ -656,6 +657,7 @@
         } catch(e) { console.error("Lỗi vẽ sơ đồ:", e); }
     };
     
+    // TÍNH NĂNG MỚI: TẢI SƠ ĐỒ SVG VỀ MÁY
     window.downloadMindmap = (svgId, fileName) => {
         const svg = document.getElementById(svgId); if (!svg) return;
         const serializer = new XMLSerializer(); let source = serializer.serializeToString(svg);
@@ -1076,7 +1078,7 @@
             let color = ansObj && ansObj.p > 0 ? (ansObj.p === 1 ? "var(--success)" : "var(--warning)") : "var(--danger)";
             let imgHtmlReview = q.image ? `<img src="${q.image}" style="max-width:100%; max-height:250px; border-radius:8px; margin-bottom:10px; display:block; border:1px solid var(--border);">` : '';
             let qTypeStr = String(q.type || "").trim().toLowerCase(); 
-            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai');
+            let isTF = qTypeStr.includes('đúng sai');
             let isShortAns = qTypeStr.includes('ngắn');
             
             h += `<div style="border-bottom: 1px solid var(--border); padding-bottom:15px; margin-bottom:15px;">
@@ -1242,7 +1244,7 @@
             if (isShortAns) {
                 h += `<div style="margin-top:15px;">
                         <div id="prev-sa-${i}" class="math-preview-box"></div>
-                        <input type="text" id="sa_${i}" name="sa_${i}" class="edit-in" placeholder="Nhập số (VD: 3.45 hoặc 3,45) hoặc phân số (VD: 1/2)..." style="font-size:16px; padding:12px; border: 2px solid #3b82f6;" oninput="prevM(this, 'prev-sa-${i}'); updateXP()">
+                        <input type="text" id="sa_${i}" name="sa_${i}" class="edit-in" placeholder="Nhập số thập phân (VD: 3.45 hoặc 3,45) hoặc phân số (VD: 1/2)..." style="font-size:16px; padding:12px; border: 2px solid #3b82f6;" oninput="prevM(this, 'prev-sa-${i}'); updateXP()">
                       </div>`;
             }
             else if (!isTF) { 
@@ -1367,4 +1369,4 @@
     initCls(); 
 </script>
 </body>
-</html>
+</html> mà lúc nãy t kêu là cái ô hiển thị của giáo viên nó ko hiển thị đc mã á nhưng những môn khác lại bt h t muốn môn nào cũng giống nhau đc h chx
