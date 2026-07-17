@@ -569,7 +569,6 @@
         }
     };
     
-    // TÍNH NĂNG MỚI: DÁN ẢNH BẰNG CTRL + V
     window.handlePasteImage = (e, idx) => {
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let index in items) {
@@ -657,7 +656,6 @@
         } catch(e) { console.error("Lỗi vẽ sơ đồ:", e); }
     };
     
-    // TÍNH NĂNG MỚI: TẢI SƠ ĐỒ SVG VỀ MÁY
     window.downloadMindmap = (svgId, fileName) => {
         const svg = document.getElementById(svgId); if (!svg) return;
         const serializer = new XMLSerializer(); let source = serializer.serializeToString(svg);
@@ -951,7 +949,7 @@
                 html += `<div style="margin-top:12px; display:block; background:var(--bg-light); padding:15px; border-radius:8px; border:1px solid var(--border);">
                             <b style="color:var(--danger); display:block; margin-bottom:8px;">ĐÁP ÁN ĐÚNG (Học sinh điền):</b> 
                             <div id="prev-ek-${i}" class="math-preview-box"></div>
-                            <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||''}" style="width:100%; padding:10px; font-size:16px;" oninput="prevM(this, 'prev-ek-${i}')" placeholder="Nhập đáp án số hoặc chữ ngắn gọn...">
+                            <input class="edit-in" id="ek-${i}" value="${q.correctAnswer||''}" style="width:100%; padding:10px; font-size:16px;" oninput="prevM(this, 'prev-ek-${i}')" placeholder="Nhập đáp án số hoặc phân số (VD: 3.45 hoặc 1/2)...">
                          </div>
                          </div>`; 
             } 
@@ -1233,7 +1231,7 @@
             h += `<div class="game-q-card" id="sc-${i}" data-type="${q.type}">`; 
             let cleanQTextHS = cleanQuestionText(q.questionText, true); 
             let qTypeStr = String(q.type || "").trim().toLowerCase(); 
-            let isTF = qTypeStr.includes('đúng sai') || qTypeStr.includes('đúng/sai'); 
+            let isTF = qTypeStr.includes('đúng sai'); 
             let isShortAns = qTypeStr.includes('ngắn');
 
             let imgHtmlHS = q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:8px; margin: 15px 0; border:1px solid #cbd5e1; display:block;">` : ''; 
@@ -1244,7 +1242,7 @@
             if (isShortAns) {
                 h += `<div style="margin-top:15px;">
                         <div id="prev-sa-${i}" class="math-preview-box"></div>
-                        <input type="text" id="sa_${i}" name="sa_${i}" class="edit-in" placeholder="Nhập đáp án của bạn vào đây..." style="font-size:16px; padding:12px; border: 2px solid #3b82f6;" oninput="prevM(this, 'prev-sa-${i}'); updateXP()">
+                        <input type="text" id="sa_${i}" name="sa_${i}" class="edit-in" placeholder="Nhập số (VD: 3.45 hoặc 3,45) hoặc phân số (VD: 1/2)..." style="font-size:16px; padding:12px; border: 2px solid #3b82f6;" oninput="prevM(this, 'prev-sa-${i}'); updateXP()">
                       </div>`;
             }
             else if (!isTF) { 
@@ -1307,7 +1305,12 @@
             if (isShortAns) { 
                 qRawMax = isMath ? 0.5 : (isScienceMath ? 0.25 : 1);
                 const r = $(`sa_${i}`); pickedLog = r ? r.value.trim() : ""; 
-                if (pickedLog.toLowerCase() === trueAns.toLowerCase().trim()) { 
+                
+                // Chuẩn hóa: Đổi dấu phẩy thành dấu chấm, xóa sạch khoảng trắng (để 3,45 = 3.45 và 1 / 2 = 1/2)
+                let normPicked = pickedLog.toLowerCase().replace(/,/g, '.').replace(/\s+/g, '');
+                let normTrueAns = trueAns.toLowerCase().replace(/,/g, '.').replace(/\s+/g, '');
+                
+                if (normPicked === normTrueAns && normPicked !== "") { 
                     qRawGot = qRawMax; p = 1; 
                 } 
             } 
@@ -1321,7 +1324,7 @@
             } 
             // 3. Trắc nghiệm Đúng/Sai
             else { 
-                qRawMax = 1.0; 
+                qRawMax = 1.0; // Điểm tối đa của 1 câu Đúng Sai luôn là 1.0đ
                 let correctArr = trueAns.split(','); let s = 0; let pickedArr = []; 
                 for (let j = 0; j < 4; j++) { const r = document.querySelector(`input[name="sd_${i}_${j}"]:checked`); const val = r ? r.value : "-"; pickedArr.push(val); if (val === correctArr[j]) s++; } 
                 pickedLog = pickedArr.join(', '); 
@@ -1332,7 +1335,7 @@
                 else if (s === 3) qRawGot = 0.5;
                 else if (s === 4) qRawGot = 1.0;
 
-                p = s === 4 ? 1 : (s > 0 ? 0.5 : 0); 
+                p = s === 4 ? 1 : (s > 0 ? 0.5 : 0); // p dùng để tô màu hiển thị UI
             } 
             
             rawScore += qRawGot; 
@@ -1342,6 +1345,7 @@
             card.style.pointerEvents = "none"; 
         } 
         
+        // Quy đổi điểm hệ số 10 bất chấp số lượng câu hỏi
         let finalScore = maxRawScore > 0 ? ((rawScore / maxRawScore) * 10).toFixed(2) : 0;
         
         const previousAttemptsCount = scoresDB.filter(s => s.examId === id && s.studentUsername === session.username).length; 
