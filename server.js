@@ -159,6 +159,8 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 console.log(`🔄 [${currentModelName}] + [Key ${i+1}] - [Mode: ${requestMode}] - ${modeText}`);
 
                 let currentInstruction = "";
+                let isTN2025 = customPrompt ? customPrompt.includes('[LỆNH ÉP SÁNG TÁC]') : false;
+
                 if (requestMode === 'scan') {
                     if (!isRecitationMode) {
                         currentInstruction = `\n2. LỆNH QUÉT ĐỀ: Trích xuất chính xác 100% nội dung văn bản gốc.\n`;
@@ -167,13 +169,20 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                         currentInstruction = `\n2. LỆNH VƯỢT RÀO BẢN QUYỀN (BẮT BUỘC): Tài liệu này bị quét bản quyền RẤT GẮT. Để sống sót qua bộ lọc, BẠN BẮT BUỘC PHẢI "PARAPHRASE" (Viết lại) TOÀN BỘ CÂU DẪN CỦA MỖI CÂU HỎI.
                         - TUYỆT ĐỐI KHÔNG CHÉP Y NGUYÊN VĂN BẢN GỐC (Sẽ bị Google block ngay lập tức).
                         - Hãy thay đổi hoàn toàn cấu trúc câu và dùng từ đồng nghĩa.
-                        - Ví dụ: Thay vì "Phát biểu nào sau đây đúng?", hãy viết "Hãy chọn ra nhận định chính xác nhất trong các phương án dưới đây:".
-                        - BẮT BUỘC GIỮ NGUYÊN: Số liệu toán học, hình học, công thức và trọn vẹn 4 đáp án A, B, C, D để học sinh làm bài không bị sai lệch kiến thức.\n`;
+                        - BẮT BUỘC GIỮ NGUYÊN: Số liệu toán học, hình học, công thức, 4 đáp án A, B, C, D và giá trị của phần Trả lời ngắn.\n`;
                     }
                     if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
                 } else {
                     if (!isRecitationMode) { 
-                        currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC: Hãy sáng tác đề dựa vào tài liệu.\n`; 
+                        if (isTN2025) {
+                            let isMath = teachingSubject.toLowerCase().includes('toán');
+                            currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC CHUẨN TỐT NGHIỆP: Hãy sáng tác đề dựa vào tài liệu, TỐI THIỂU 15 CÂU. Áp dụng chuẩn tỷ lệ của môn ${isMath ? 'Toán' : 'Lý/Hóa/Sinh'}:
+                            - Phần I: Câu trắc nghiệm nhiều lựa chọn (Chiếm tỷ trọng lớn nhất, khoảng ${isMath ? '55%' : '65%'}).
+                            - Phần II: Câu trắc nghiệm Đúng/Sai (Mỗi câu gồm 4 ý a,b,c,d. Chiếm khoảng ${isMath ? '18%' : '14%'}).
+                            - Phần III: Câu trắc nghiệm Trả lời ngắn (Học sinh điền kết quả cuối cùng. Chiếm khoảng ${isMath ? '27%' : '21%'}).\n`;
+                        } else {
+                            currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC TỰ DO: Hãy sáng tác đề dựa vào tài liệu.\n`; 
+                        }
                         if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
                     } else { 
                         currentInstruction = `\n2. ` + getSmartPrompt(teachingSubject, customPrompt) + `\n`; 
@@ -187,6 +196,7 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 3. Trích xuất ĐẦY ĐỦ 100% câu hỏi (QUY TẮC BẢO TOÀN): Tài liệu có bao nhiêu câu hỏi, phải bóc tách đầy đủ bấy nhiêu câu, tuyệt đối không được bỏ sót hay tóm tắt.
                    - Câu hỏi trắc nghiệm 4 lựa chọn -> phân loại type là "nhiều lựa chọn".
                    - Câu hỏi trắc nghiệm Đúng/Sai -> phân loại type là "đúng sai", BẮT BUỘC phải bóc tách rành mạch 4 ý nhỏ a, b, c, d vào mảng "subOptions" và đáp án Đúng/Sai của từng ý vào mảng "correctAnswers".
+                   - Câu hỏi điền khuyết/trả lời ngắn -> phân loại type là "trả lời ngắn", đáp án cuối cùng ghi vào trường "correctAnswer".
                 4. Soi hình ảnh và sơ đồ (Mắt thần): CHỈ QUÉT HÌNH ẢNH CỦA CÁC CÂU HỎI BÀI TẬP. Bất cứ câu bài tập nào gốc có chứa hình vẽ, đồ thị, bảng biến thiên, BẮT BUỘC ghi chú chi tiết vào mảng "teacher_image_notes".
                    - TUYỆT ĐỐI BỎ QUA toàn bộ hình ảnh minh họa nằm ở phần lý thuyết chung. Nếu không có câu bài tập nào chứa hình, hãy để mảng này rỗng [].
                    - Tại trường "cau_hien_tai", BẮT BUỘC phải ghi chính xác tên câu hỏi sẽ hiển thị (VD: "Câu 1", "Câu 2"). TUYỆT ĐỐI KHÔNG ĐƯỢC GHI "Không có".
@@ -207,6 +217,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                             "questionText": "Câu 2: Nội dung câu dẫn đã được viết lại?", 
                             "subOptions": ["Nội dung ý a", "Nội dung ý b", "Nội dung ý c", "Nội dung ý d"], 
                             "correctAnswers": ["D", "S", "D", "S"] 
+                        },
+                        { 
+                            "type": "trả lời ngắn", 
+                            "questionText": "Câu 3: Hãy tính thể tích khối chóp?", 
+                            "correctAnswer": "12.5" 
                         }
                     ]
                 }
@@ -239,7 +254,11 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                         // LỚP PHÒNG NGỰ KÉP THÉP CHO MÔN TOÁN: Chữa bệnh "Ngáo Toán Học" của AI
                         if (finalResult && finalResult.exam) {
                             finalResult.exam.forEach(q => {
-                                if (q.type === 'nhiều lựa chọn' && q.correctAnswer && q.correctAnswer.length > 2) {
+                                let tStr = String(q.type || "").toLowerCase();
+                                if (tStr.includes('ngắn') || tStr.includes('điền')) {
+                                    q.type = 'trả lời ngắn';
+                                    if(typeof q.correctAnswer !== 'string') q.correctAnswer = String(q.correctAnswer || "");
+                                } else if (tStr === 'nhiều lựa chọn' && q.correctAnswer && q.correctAnswer.length > 2) {
                                     // Bị lú rồi: Nhét nguyên cụm công thức vào Key
                                     // Đi lùng sục xem cụm công thức này khớp với option nào (A=0, B=1, C=2, D=3)
                                     let matchedIndex = (q.options || []).findIndex(opt => opt.trim() === q.correctAnswer.trim());
