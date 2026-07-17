@@ -162,19 +162,19 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                 let isTN2025 = customPrompt ? customPrompt.includes('[LỆNH ÉP SÁNG TÁC]') : false;
                 let isScienceMath = ['toán', 'lý', 'hóa', 'sinh', 'vật lý', 'vật lí'].some(s => teachingSubject.toLowerCase().includes(s));
 
+                // 🛑 LỚP KỶ LUẬT THÉP: ÉP BUỘC CHIA DẠNG CÂU HỎI
                 if (requestMode === 'scan') {
                     if (!isRecitationMode) {
                         currentInstruction = `\n2. LỆNH QUÉT ĐỀ GỐC (TRÍCH XUẤT 100%): 
-                        - Trích xuất toàn bộ câu hỏi.
-                        - TỰ ĐỘNG NHẬN DIỆN PHÂN LOẠI CÂU HỎI:
-                          + Có 4 đáp án A, B, C, D -> phân loại "nhiều lựa chọn".
-                          + Gồm 4 mệnh đề a, b, c, d Đúng/Sai -> phân loại "đúng sai".
-                          + KHÔNG CÓ 4 đáp án, yêu cầu điền một kết quả cuối cùng (tính toán/số liệu) -> BẮT BUỘC phân loại là "trả lời ngắn", ghi kết quả đó vào "correctAnswer".\n`;
+                        - Trích xuất toàn bộ câu hỏi trong tài liệu.
+                        - TỰ ĐỘNG NHẬN DIỆN PHÂN LOẠI CÂU HỎI (LUẬT THÉP CHỐNG LƯỜI BIẾNG):
+                          + Nếu câu gốc CÓ SẴN 4 đáp án A, B, C, D -> phân loại "nhiều lựa chọn".
+                          + Nếu câu gốc CÓ SẴN 4 mệnh đề a, b, c, d Đúng/Sai -> phân loại "đúng sai".
+                          + Nếu câu gốc CHỈ CÓ YÊU CẦU TÍNH TOÁN, KHÔNG CÓ SẴN đáp án A, B, C, D -> BẮT BUỘC phân loại "trả lời ngắn". TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ BỊA RA MẢNG "options" NẾU ĐỀ GỐC KHÔNG CÓ.\n`;
                     } else {
                         currentInstruction = `\n2. LỆNH VƯỢT RÀO BẢN QUYỀN: BẮT BUỘC PHẢI "PARAPHRASE" TOÀN BỘ CÂU DẪN. 
-                        - TUYỆT ĐỐI KHÔNG CHÉP Y NGUYÊN VĂN BẢN GỐC (Sẽ bị Google block ngay lập tức).
-                        - Hãy thay đổi hoàn toàn cấu trúc câu và dùng từ đồng nghĩa.
-                        - TỰ ĐỘNG NHẬN DIỆN: Có A,B,C,D -> "nhiều lựa chọn". Gồm 4 mệnh đề -> "đúng sai". Câu hỏi điền số/tính toán -> "trả lời ngắn".
+                        - TUYỆT ĐỐI KHÔNG CHÉP Y NGUYÊN VĂN BẢN GỐC. 
+                        - LUẬT THÉP VỀ PHÂN LOẠI: Tài liệu gốc có A,B,C,D -> "nhiều lựa chọn". Tài liệu gốc gồm 4 mệnh đề -> "đúng sai". TÀI LIỆU GỐC KHÔNG CÓ OPTIONS (A,B,C,D) -> Bắt buộc phân loại "trả lời ngắn" (KHÔNG TỰ BỊA THÊM options).
                         - BẮT BUỘC GIỮ NGUYÊN: Số liệu toán học, hình học, công thức và giá trị đáp án.\n`;
                     }
                     if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
@@ -182,12 +182,13 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     if (!isRecitationMode) { 
                         if (isTN2025) {
                             let isMath = teachingSubject.toLowerCase().includes('toán');
-                            currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC CHUẨN TỐT NGHIỆP: Hãy sáng tác số lượng câu hỏi tỷ lệ thuận với độ dài tài liệu, nhưng TỐI THIỂU PHẢI ĐẠT 15 CÂU. Áp dụng chuẩn tỷ lệ của môn ${isMath ? 'Toán' : 'Lý/Hóa/Sinh'}:
-                            - Phần I: Câu trắc nghiệm nhiều lựa chọn (Chiếm tỷ trọng lớn nhất, khoảng ${isMath ? '55%' : '65%'}).
-                            - Phần II: Câu trắc nghiệm Đúng/Sai (Mỗi câu gồm 4 ý a,b,c,d. Chiếm khoảng ${isMath ? '18%' : '14%'}).
-                            - Phần III: Câu trắc nghiệm Trả lời ngắn (Học sinh điền kết quả cuối cùng. Chiếm khoảng ${isMath ? '27%' : '21%'}).\n`;
+                            currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC CHUẨN TỐT NGHIỆP: Hãy sáng tác số lượng câu hỏi tỷ lệ thuận với độ dài tài liệu. NHƯNG TỐI THIỂU PHẢI TẠO ĐỦ 15 CÂU HỎI.
+                            - BẮT BUỘC PHẢI CHIA LÀM 3 DẠNG CÂU HỎI:
+                              + Khoảng 60% câu đầu tiên: Phân loại "nhiều lựa chọn" (Bạn tự tạo 4 options A,B,C,D).
+                              + Khoảng 20% câu tiếp theo: Phân loại "đúng sai" (Bạn tự tạo 4 subOptions).
+                              + Khoảng 20% câu CUỐI CÙNG: BẮT BUỘC phân loại "trả lời ngắn" (TUYỆT ĐỐI KHÔNG TẠO MẢNG OPTIONS, bắt học sinh tự tính và điền kết quả dạng số vào "correctAnswer"). Nếu bạn không tạo dạng "trả lời ngắn", bạn sẽ bị phạt.\n`;
                         } else {
-                            currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC TỰ DO: Sáng tác đề dựa vào tài liệu, độ dài linh hoạt nhưng TỐI THIỂU LÀ 15 CÂU.\n`; 
+                            currentInstruction = `\n2. NHIỆM VỤ SÁNG TÁC TỰ DO: Sáng tác đề dựa vào tài liệu. TỐI THIỂU PHẢI TẠO 15 CÂU HỎI. BẮT BUỘC PHẢI CÓ ĐỦ 3 DẠNG: "nhiều lựa chọn", "đúng sai" VÀ "trả lời ngắn".\n`; 
                         }
                         if (customPrompt) { currentInstruction += `Lệnh từ GV: ${customPrompt}\n`; }
                     } else { 
@@ -195,17 +196,17 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     }
                 }
 
-                // CÚ CHỐT: ÉP AI BỌC DẤU ĐÔ LA $ CHO CÔNG THỨC TOÁN
                 let mathFormatInstruction = isScienceMath ? `\n[LƯU Ý ĐỊNH DẠNG TOÁN HỌC TỐI MẬT]: Môn học là ${teachingSubject}. BẮT BUỘC mọi công thức, biểu thức, phân số, phương trình và ĐẶC BIỆT LÀ CÁC ĐÁP ÁN (options, subOptions, correctAnswer) phải được bọc trong cặp dấu $ (Ví dụ: $\\frac{1}{2}$, $F(x) = x^2$, $67/4$). TUYỆT ĐỐI KHÔNG để mã LaTeX trần trụi mà không có dấu $.` : "";
 
                 let promptText = `Bạn là chuyên gia thẩm định và trích xuất dữ liệu giáo dục. Hãy đọc toàn bộ tài liệu/ảnh đính kèm và thực hiện ĐẦY ĐỦ 4 NHIỆM VỤ sau:
                 1. Vẽ Sơ đồ tư duy (Mindmap): Tóm tắt chi tiết, logic toàn bộ cấu trúc và kiến thức trọng tâm của tài liệu đính kèm bằng định dạng Markdown.
                 ${currentInstruction}
                 ${mathFormatInstruction}
-                3. Trích xuất ĐẦY ĐỦ 100% câu hỏi (QUY TẮC BẢO TOÀN): Tài liệu có bao nhiêu câu hỏi, phải bóc tách đầy đủ bấy nhiêu câu, tuyệt đối không được bỏ sót hay tóm tắt.
-                   - Câu hỏi trắc nghiệm 4 lựa chọn -> phân loại type là "nhiều lựa chọn".
-                   - Câu hỏi trắc nghiệm Đúng/Sai -> phân loại type là "đúng sai", BẮT BUỘC phải bóc tách rành mạch 4 ý nhỏ a, b, c, d vào mảng "subOptions" và đáp án Đúng/Sai của từng ý vào mảng "correctAnswers".
-                   - Câu hỏi tính toán ra số cuối cùng -> phân loại type là "trả lời ngắn", đáp án cuối cùng ghi vào trường "correctAnswer".
+                3. Trích xuất ĐẦY ĐỦ 100% câu hỏi (QUY TẮC BẢO TOÀN): 
+                   - KIỂM TRA LẠI: MỘT ĐỀ THI BẮT BUỘC PHẢI CÓ DẠNG "trả lời ngắn". TUYỆT ĐỐI KHÔNG biến tất cả thành "nhiều lựa chọn".
+                   - Câu hỏi "nhiều lựa chọn" -> bắt buộc cung cấp mảng "options".
+                   - Câu hỏi "đúng sai" -> bắt buộc cung cấp mảng "subOptions" và "correctAnswers".
+                   - Câu hỏi "trả lời ngắn" -> TUYỆT ĐỐI KHÔNG CUNG CẤP mảng "options" hay "subOptions", chỉ ghi đáp án cuối cùng vào "correctAnswer".
                 4. Soi hình ảnh và sơ đồ (Mắt thần): CHỈ QUÉT HÌNH ẢNH CỦA CÁC CÂU HỎI BÀI TẬP. Bất cứ câu bài tập nào gốc có chứa hình vẽ, đồ thị, bảng biến thiên, BẮT BUỘC ghi chú chi tiết vào mảng "teacher_image_notes".
                    - TUYỆT ĐỐI BỎ QUA toàn bộ hình ảnh minh họa nằm ở phần lý thuyết chung. Nếu không có câu bài tập nào chứa hình, hãy để mảng này rỗng [].
                    - Tại trường "cau_hien_tai", BẮT BUỘC phải ghi chính xác tên câu hỏi sẽ hiển thị (VD: "Câu 1", "Câu 2"). TUYỆT ĐỐI KHÔNG ĐƯỢC GHI "Không có".
@@ -260,28 +261,33 @@ app.post('/api/tao-de-thi', upload.single('file'), async (req, res) => {
                     try {
                         finalResult = JSON.parse(cleanJsonString);
 
+                        // 🛑 CODE POST-PROCESSING: CHỐNG CHỈ ĐỊNH AI LƯỜI BIẾNG 🛑
                         if (finalResult && finalResult.exam) {
                             finalResult.exam.forEach(q => {
                                 let tStr = String(q.type || "").toLowerCase();
-                                // XỬ LÝ PHÂN LOẠI TRẢ LỜI NGẮN
+                                
+                                // Nếu câu hỏi chứa từ khóa "ngắn", "điền" -> Tước bỏ mọi options nếu AI lỡ tạo
                                 if (tStr.includes('ngắn') || tStr.includes('điền')) {
                                     q.type = 'trả lời ngắn';
+                                    delete q.options;
+                                    delete q.subOptions;
                                     if(typeof q.correctAnswer !== 'string') q.correctAnswer = String(q.correctAnswer || "");
                                 } 
-                                else if (tStr === 'nhiều lựa chọn' && q.correctAnswer && q.correctAnswer.length > 2) {
-                                    // Bị lú rồi: Nhét nguyên cụm công thức vào Key
+                                // Nếu AI phân loại "nhiều lựa chọn" mà lại... CHẢ CÓ MẢNG OPTIONS NÀO, hoặc mảng rỗng -> Ép về trả lời ngắn
+                                else if (tStr.includes('lựa chọn') && (!q.options || q.options.length < 2)) {
+                                    q.type = 'trả lời ngắn';
+                                    delete q.options;
+                                    delete q.subOptions;
+                                }
+                                // Xử lý đáp án ngáo cho trắc nghiệm
+                                else if (tStr.includes('lựa chọn') && q.correctAnswer && q.correctAnswer.length > 2) {
                                     let matchedIndex = (q.options || []).findIndex(opt => opt.trim() === q.correctAnswer.trim());
-                                    
                                     if (matchedIndex !== -1) {
-                                        q.correctAnswer = String.fromCharCode(65 + matchedIndex); // Ép về lại A, B, C, D chuẩn
+                                        q.correctAnswer = String.fromCharCode(65 + matchedIndex);
                                     } else {
-                                        // Nếu mò không ra (AI tự chế đáp án), mặc định gán chữ A để web không bị sập
                                         let firstChar = q.correctAnswer.trim().charAt(0).toUpperCase();
-                                        if (['A','B','C','D'].includes(firstChar)) {
-                                            q.correctAnswer = firstChar;
-                                        } else {
-                                            q.correctAnswer = "A"; 
-                                        }
+                                        if (['A','B','C','D'].includes(firstChar)) { q.correctAnswer = firstChar; } 
+                                        else { q.correctAnswer = "A"; }
                                     }
                                 }
                             });
